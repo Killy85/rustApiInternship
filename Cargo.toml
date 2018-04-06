@@ -4,5 +4,6 @@ version = "0.1.0"
 authors = ["Killy85 <goureau.n.a@hotmail.fr>"]
 
 [dependencies]
+postgres = "0.15"
 rocket = "*"
 rocket_codegen = "*"
