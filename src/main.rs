@@ -10,7 +10,7 @@ use rocket::response::content;
 
 
 struct Internship {
-    id: i32,
+    id: i16,
     title: String
 }
 
@@ -43,9 +43,12 @@ fn test_db() -> &'static str {
     }
     "oui"
     }
-
-
+    
+#[get("/poney")]
+fn poney() -> content::Html<&'static str> {
+    content::Html("<!DOCTYPE html><html><body><h1 style=\"text-decoration: blink\">je suis un poney</h1></body></html>")
+    }
 
 fn main() {
-    rocket::ignite().mount("/", routes![hello, helloname, vntm, test_db]).launch();
+    rocket::ignite().mount("/", routes![hello, helloname, vntm, poney, test_db]).launch();
 } 
