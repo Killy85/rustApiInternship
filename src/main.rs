@@ -10,7 +10,7 @@ use rocket::response::content;
 
 
 struct Internship {
-    id: i16,
+    id: i32,
     title: String
 }
 
