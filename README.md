@@ -3,21 +3,37 @@
  This project aim to create a rust API which will be used to get informations about company and internship that has been made there. Using Rust in order to get the best performance, it use rustless and rust-postgress
 ## Getting started 
  
- You may want to wait for this section to be filled
- 
+ At this point of devellopement, the project is one file which we will run and compile using cargo. To launch the projet just do the following after ensuring rust is installed:
+
+    rustup update && cargo update
+    cargo run
+
+or
+
+    rustup update && cargo update
+    cargo build
+    ./target/debug/rust_api_intership
+
+This will launch the actual API and make it acessible on localhost:8000
+
+The routes' list is available in the terminal in which you launch the build and run command.
+
 ### Prerequisites
     
     Rust
 
+To install Rust, follow the recommandation available here : https://www.rust-lang.org/fr-FR/install.html
+
 ### Installing
     
-    You may want to wait for this section to be filled
+To install all the dependencies, just run:
+
+    rustup update && cargo update
+
+
 ## Running the tests 
     
-    You may want to wait for this section to be filled  
-## Usage 
-
-    You may want to wait for this section to be filled
+   There is no tests for the moment 
 
 ## Contributing 
 
