@@ -1,31 +1,31 @@
-= RustInternshipAPI 
+# RustInternshipAPI 
  
  This project aim to create a rust API which will be used to get informations about company and internship that has been made there. Using Rust in order to get the best performance, it use rustless and rust-postgress
-== Getting started 
+## Getting started 
  
  You may want to wait for this section to be filled
  
-=== Prerequisites
+### Prerequisites
     
     Rust
 
-=== Installing
+### Installing
     
     You may want to wait for this section to be filled
-== Running the tests 
+## Running the tests 
     
     You may want to wait for this section to be filled  
-== Usage 
+## Usage 
 
     You may want to wait for this section to be filled
 
-== Contributing 
+## Contributing 
 
     No contrinutors added yet 
 
-== Authors 
+## Authors 
 
     Me and @MathiasLoiret 
 
-== License 
+## License 
     You may want to wait for this section to be filled
