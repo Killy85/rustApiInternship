@@ -14,6 +14,12 @@ struct Internship {
     title: String
 }
 
+struct Enterprise {
+    id: i32,
+    nom: String,
+    adresse: String
+}
+
 #[get("/")]
 fn hello() -> &'static str {
     "Hello, world!"
@@ -43,6 +49,23 @@ fn test_db() -> &'static str {
     }
     "oui"
     }
+
+
+    #[get("/test-db2")]
+fn db_enterprise() -> &'static str {
+    let conn = Connection::connect("postgres://wjdpqrrq:kxYU23ThjIOSmtVqi6lX4BpSUdQXMG7e@horton.elephantsql.com:5432/wjdpqrrq",
+                               TlsMode::None).unwrap();
+    for row in &conn.query("SELECT id, nom, adresse FROM entreprise", &[]).unwrap() {
+        let enterprise = Enterprise {
+            id: row.get(0),
+            nom: row.get(1),
+            adresse: row.get(2),
+        };
+        println!("Found enterprise {}  {}  {}",enterprise.id, enterprise.nomx, enterprise.adresse);
+    }
+    "oui"
+    }
+
     
 #[get("/poney")]
 fn poney() -> content::Html<&'static str> {
@@ -50,5 +73,5 @@ fn poney() -> content::Html<&'static str> {
     }
 
 fn main() {
-    rocket::ignite().mount("/", routes![hello, helloname, vntm, poney, test_db]).launch();
+    rocket::ignite().mount("/", routes![hello, helloname, vntm, poney, test_db, db_enterprise]).launch();
 } 
