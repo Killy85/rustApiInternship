@@ -1,8 +1,9 @@
-#![feature(plugin)]
+#![feature(plugin, decl_macro)]
 #![plugin(rocket_codegen)]
 
-extern crate rocket;
 extern crate postgres;
+
+#[macro_use] extern crate rocket;
 
 use postgres::{Connection, TlsMode};
 use rocket::http::RawStr;
