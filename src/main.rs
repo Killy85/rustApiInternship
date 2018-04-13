@@ -61,7 +61,7 @@ fn db_enterprise() -> &'static str {
             nom: row.get(1),
             adresse: row.get(2),
         };
-        println!("Found enterprise {}  {}  {}",enterprise.id, enterprise.nomx, enterprise.adresse);
+        println!("Found enterprise {}  {}  {}",enterprise.id, enterprise.nom, enterprise.adresse);
     }
     "oui"
     }
