@@ -10,11 +10,9 @@ extern crate rocket;
 use postgres::{Connection, TlsMode};
 use rocket::http::RawStr;
 use rocket::response::content;
-use serde_json::Error;
-use rocket_contrib::{Json, Value};
-use rocket::State;
-use std::collections::HashMap;
-use std::sync::Mutex;
+use serde_json::Value;
+use rocket_contrib::{Json, Value as OtherValue};
+use std::collections::LinkedList;
 
 #[derive(Serialize, Deserialize)]
 struct User {
@@ -36,31 +34,21 @@ struct Connected {
 }
 
 struct Internship {
-    id: i32,
-    title: String
+    id: i32
 }
 
-struct Enterprise {
+#[derive(Serialize, Deserialize)]
+struct EnterpriseInit {
     id: i32,
-    nom: String,
-    adresse: String
+    name: String,
+    longitude: f32,
+    latitude: f32
 }
 
 #[get("/")]
 fn hello() -> &'static str {
-    "Hello, world!"
+    "Welcome to HORO API"
 }
-
-#[get("/hello/<name>")]
-fn helloname(name: &RawStr) -> String {
-    format!("Hello, {}!", name.as_str())
-}
-
-
-#[get("/vntm/<name>")]
-fn vntm(name: &RawStr) -> content::Html<String> {
-    content::Html(format!("<!DOCTYPE html><html><body><h1 style=\"text-decoration: blink\">Va bien niquer ta mère {} !!!</h1></body></html>", name.as_str()))
-    }
 
 
 #[post("/auth/signin",format = "application/json", data = "<input>")]
@@ -100,40 +88,35 @@ fn authenticate(input: Json<ConnectionApp>) -> content::Html<String> {
 
 #[get("/test-db")]
 fn test_db() -> &'static str {
-    let conn = Connection::connect("postgres://wjdpqrrq:kxYU23ThjIOSmtVqi6lX4BpSUdQXMG7e@horton.elephantsql.com:5432/wjdpqrrq",
+    let conn = Connection::connect("postgres://killy:test123@10.44.2.8:5432/rustDb",
                                TlsMode::None).unwrap();
-    for row in &conn.query("SELECT id, title FROM internship", &[]).unwrap() {
+    for row in &conn.query("SELECT id_internship FROM internship", &[]).unwrap() {
         let person = Internship {
-            id: row.get(0),
-            title: row.get(1),
+            id: row.get(0)
         };
-        println!("Found person {}  {}",person.id, person.title);
+        println!("Found person {}",person.id);
     }
     "oui"
-    }
+}       
 
-
-    #[get("/test-db2")]
-fn db_enterprise() -> &'static str {
-    let conn = Connection::connect("postgres://wjdpqrrq:kxYU23ThjIOSmtVqi6lX4BpSUdQXMG7e@horton.elephantsql.com:5432/wjdpqrrq",
-                               TlsMode::None).unwrap();
-    for row in &conn.query("SELECT id, nom, adresse FROM entreprise", &[]).unwrap() {
-        let enterprise = Enterprise {
-            id: row.get(0),
-            nom: row.get(1),
-            adresse: row.get(2),
-        };
-        println!("Found enterprise {}  {}  {}",enterprise.id, enterprise.nom, enterprise.adresse);
-    }
-    "oui"
-    }
-
+    #[get("/init")]
+fn init() -> content::Json<String>{
     
-#[get("/poney")]
-fn poney() -> content::Html<&'static str> {
-    content::Html("<!DOCTYPE html><html><body><h1 style=\"text-decoration: blink\">je suis un poney</h1></body></html>")
-    }
+    let conn = Connection::connect("postgres://killy:test123@10.44.2.8:5432/rustDb",TlsMode::None).unwrap();
+    let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
+
+    for row in &conn.query("SELECT id_company, name, longitude, latitude FROM company", &[]).unwrap() {
+        let enterprise = EnterpriseInit {
+            id: row.get(0),
+            name: row.get(1),
+            longitude : row.get(2),
+            latitude : row.get(3)
+        };
+        list.push_back(enterprise);
+    }   
+    content::Json(json!({"points" : list}).to_string())
+}
 
 fn main() {
-    rocket::ignite().mount("/", routes![hello, helloname, vntm, poney, test_db, db_enterprise, signin, authenticate]).launch();
+    rocket::ignite().mount("/", routes![hello,test_db, signin, authenticate,init]).launch();
 } 
