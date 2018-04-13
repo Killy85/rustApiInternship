@@ -1,0 +1,3 @@
+ORM initialization successful
+App events bus { name: 'booted', namespace: 'shared' }
+App events bus { name: 'booted', namespace: 'requester' }

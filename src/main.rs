@@ -3,18 +3,20 @@
 
 extern crate postgres;
 extern crate serde_json;
-
-#[macro_use] extern crate rocket;
+extern crate rocket;
+#[macro_use] extern crate rocket_contrib;
+#[macro_use] extern crate serde_derive;
 
 use postgres::{Connection, TlsMode};
 use rocket::http::RawStr;
-use rocket::request::Form;
 use rocket::response::content;
-use serde_json::Value;
+use serde_json::Error;
+use rocket_contrib::{Json, Value};
+use rocket::State;
+use std::collections::HashMap;
+use std::sync::Mutex;
 
-
-
-#[derive(FromForm)]
+#[derive(Serialize, Deserialize)]
 struct User {
     name: String,
     firstname: String,
@@ -50,11 +52,10 @@ fn vntm(name: &RawStr) -> content::Html<String> {
     }
 
 
-#[post("/auth/signin", data = "<input>")]
-fn signin(input: Form<User>) -> content::Html<String> {
-    //let v: Value = serde_json::from_str(&input).unwrap();
-    println!("That's a test {}",input.get().name);
-    content::Html(format!("oui oui bien {}" ,input.get().firstname))
+#[post("/auth/signin",format = "application/json", data = "<input>")]
+fn signin(input: Json<User>) -> content::Html<&'static str> {
+    println!("That's a test");
+    content::Html("oui oui bien")
     }
 
 #[get("/test-db")]
