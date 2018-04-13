@@ -23,6 +23,17 @@ struct User {
     mail: String,
     pswd: String
 }
+#[derive(Serialize, Deserialize)]
+struct ConnectionApp {
+    mail: String,
+    pswd: String
+}
+
+#[derive(Serialize, Deserialize)]
+struct Connected {
+    name: String,
+    firstname: String
+}
 
 struct Internship {
     id: i32,
@@ -56,6 +67,35 @@ fn vntm(name: &RawStr) -> content::Html<String> {
 fn signin(input: Json<User>) -> content::Html<&'static str> {
     println!("That's a test");
     content::Html("oui oui bien")
+    }
+
+
+#[post("/auth/auth",format = "application/json", data = "<input>")]
+fn authenticate(input: Json<ConnectionApp>) -> content::Html<String> {
+    let conn = Connection::connect("postgres://killy:test123@localhost:5432/rustDb",
+                               TlsMode::None).unwrap();
+    let message : String;
+    let result = conn.query(
+    r#"
+        SELECT name, firstname
+        FROM users
+        WHERE mail = $1
+        AND password = $2
+    "#,
+    &[&input.mail, &input.pswd]).unwrap();
+
+    if !result.is_empty() && result.len() == 1 {
+        let user = result.get(0);
+        let userConn = Connected{
+            name: user.get(0),
+            firstname: user.get(1),
+        };
+        message ="Tu passes!".to_string();
+    }else {
+        message = "Tu passes pas !".to_string();
+    }
+    
+    content::Html(format!("{}", message))
     }
 
 #[get("/test-db")]
@@ -95,5 +135,5 @@ fn poney() -> content::Html<&'static str> {
     }
 
 fn main() {
-    rocket::ignite().mount("/", routes![hello, helloname, vntm, poney, test_db, db_enterprise, signin]).launch();
+    rocket::ignite().mount("/", routes![hello, helloname, vntm, poney, test_db, db_enterprise, signin, authenticate]).launch();
 } 
