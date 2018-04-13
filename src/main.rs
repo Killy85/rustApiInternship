@@ -1,14 +1,26 @@
-#![feature(plugin, decl_macro)]
+#![feature(plugin, decl_macro, custom_derive)]
 #![plugin(rocket_codegen)]
 
 extern crate postgres;
+extern crate serde_json;
 
 #[macro_use] extern crate rocket;
 
 use postgres::{Connection, TlsMode};
 use rocket::http::RawStr;
+use rocket::request::Form;
 use rocket::response::content;
+use serde_json::Value;
 
+
+
+#[derive(FromForm)]
+struct User {
+    name: String,
+    firstname: String,
+    mail: String,
+    pswd: String
+}
 
 struct Internship {
     id: i32,
@@ -35,6 +47,14 @@ fn helloname(name: &RawStr) -> String {
 #[get("/vntm/<name>")]
 fn vntm(name: &RawStr) -> content::Html<String> {
     content::Html(format!("<!DOCTYPE html><html><body><h1 style=\"text-decoration: blink\">Va bien niquer ta mère {} !!!</h1></body></html>", name.as_str()))
+    }
+
+
+#[post("/auth/signin", data = "<input>")]
+fn signin(input: Form<User>) -> content::Html<String> {
+    //let v: Value = serde_json::from_str(&input).unwrap();
+    println!("That's a test {}",input.get().name);
+    content::Html(format!("oui oui bien {}" ,input.get().firstname))
     }
 
 #[get("/test-db")]
@@ -74,5 +94,5 @@ fn poney() -> content::Html<&'static str> {
     }
 
 fn main() {
-    rocket::ignite().mount("/", routes![hello, helloname, vntm, poney, test_db, db_enterprise]).launch();
+    rocket::ignite().mount("/", routes![hello, helloname, vntm, poney, test_db, db_enterprise, signin]).launch();
 } 
