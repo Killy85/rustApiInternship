@@ -8,11 +8,14 @@ extern crate rocket;
 #[macro_use] extern crate serde_derive;
 
 use postgres::{Connection, TlsMode};
-use rocket::http::RawStr;
 use rocket::response::content;
-use serde_json::Value;
-use rocket_contrib::{Json, Value as OtherValue};
+use rocket_contrib::{Json};
 use std::collections::LinkedList;
+use rocket::response::status;
+use rocket::Response;
+use rocket::Outcome::{Success, Failure};
+use rocket::http::Status;
+
 
 #[derive(Serialize, Deserialize)]
 struct User {
@@ -52,14 +55,27 @@ fn hello() -> &'static str {
 
 
 #[post("/auth/signin",format = "application/json", data = "<input>")]
-fn signin(input: Json<User>) -> content::Html<&'static str> {
-    println!("That's a test");
-    content::Html("oui oui bien")
+fn signin(input: Json<User>) -> content::Json<String> {
+    let conn = Connection::connect("postgres://killy:test123@localhost:5432/rustDb",
+                               TlsMode::None).unwrap();
+
+    let result = conn.query(
+    r#"
+        INSERT INTO users
+        VALUES ($1,$2,$3,$4)
+    "#,
+    &[&input.name, &input.firstname,&input.mail,&input.pswd]);
+    if result.is_ok(){
+            content::Json(json!({"status" : 200, "message" : "User created"}).to_string())
+    }else{
+            content::Json(json!({"status" : 404,"message" : "An error occured while creating the user"}).to_string())
+    }
+
     }
 
 
 #[post("/auth/auth",format = "application/json", data = "<input>")]
-fn authenticate(input: Json<ConnectionApp>) -> content::Html<String> {
+fn authenticate(input: Json<ConnectionApp>) -> content::Json<String> {
     let conn = Connection::connect("postgres://killy:test123@localhost:5432/rustDb",
                                TlsMode::None).unwrap();
     let message : String;
@@ -72,18 +88,16 @@ fn authenticate(input: Json<ConnectionApp>) -> content::Html<String> {
     "#,
     &[&input.mail, &input.pswd]).unwrap();
 
-    if !result.is_empty() && result.len() == 1 {
-        let user = result.get(0);
-        let userConn = Connected{
-            name: user.get(0),
-            firstname: user.get(1),
-        };
-        message ="Tu passes!".to_string();
-    }else {
-        message = "Tu passes pas !".to_string();
-    }
-    
-    content::Html(format!("{}", message))
+        if !result.is_empty() && result.len() == 1 {
+            let user = result.get(0);
+            let userConn = Connected{
+                name: user.get(0),
+                firstname: user.get(1),
+            }; 
+            content::Json(json!({"status" : "200", "user" : userConn}).to_string())
+        }else { 
+            content::Json(json!({"status" : "400", "user" : " "}).to_string())
+        }
     }
 
 #[get("/test-db")]
@@ -99,7 +113,7 @@ fn test_db() -> &'static str {
     "oui"
 }       
 
-    #[get("/init")]
+#[get("/init")]
 fn init() -> content::Json<String>{
     
     let conn = Connection::connect("postgres://killy:test123@10.44.2.8:5432/rustDb",TlsMode::None).unwrap();
