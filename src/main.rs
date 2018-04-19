@@ -82,7 +82,7 @@ fn signin(input: Json<User>) -> content::Json<String> {
 fn authenticate(input: Json<ConnectionApp>) -> content::Json<String> {
     let conn = Connection::connect("postgres://killy:test123@localhost:5432/rustDb",
                                TlsMode::None).unwrap();
-    let message : String;
+    
     let result = conn.query(
     r#"
         SELECT name, firstname
@@ -94,11 +94,11 @@ fn authenticate(input: Json<ConnectionApp>) -> content::Json<String> {
 
         if !result.is_empty() && result.len() == 1 {
             let user = result.get(0);
-            let userConn = Connected{
+            let user_conn = Connected{
                 name: user.get(0),
                 firstname: user.get(1),
             }; 
-            content::Json(json!({"status" : "200", "user" : userConn}).to_string())
+            content::Json(json!({"status" : "200", "user" : user_conn}).to_string())
         }else { 
             content::Json(json!({"status" : "400", "user" : " "}).to_string())
         }
@@ -137,7 +137,7 @@ fn init() -> content::Json<String>{
 
 
 fn scale_float_add(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
-    if(is_lat){
+    if is_lat{
         input + (Y_DELTA * (zoom_level as f32/10.0))
     }else{
         input + (X_DELTA * (zoom_level as f32/10.0))
@@ -145,7 +145,7 @@ fn scale_float_add(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
 }
 
 fn scale_float_sup(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
-    if(is_lat){
+    if is_lat{
         input - (Y_DELTA * (zoom_level as f32/10.0))
     }else{
         input - (X_DELTA * (zoom_level as f32/10.0))
