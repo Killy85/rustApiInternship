@@ -39,6 +39,13 @@ struct Internship {
 }
 
 #[derive(Serialize, Deserialize)]
+struct Tagsinit {
+    id_tag: i32,
+    name: String
+}
+
+
+#[derive(Serialize, Deserialize)]
 struct EnterpriseInit {
     id: i32,
     name: String,
@@ -135,6 +142,22 @@ fn init() -> content::Json<String>{
     content::Json(json!({"points" : list}).to_string())
 }
 
+#[get("/tags")]
+fn tags() -> content::Json<String>{
+    
+    let conn = Connection::connect("postgres://killy:test123@10.44.2.8:5432/rustDb",TlsMode::None).unwrap();
+    let mut list: LinkedList<Tagsinit> = LinkedList::new(); 
+
+    for row in &conn.query("SELECT id_tag, name FROM tag", &[]).unwrap() {
+        let tags = Tagsinit {
+            id_tag: row.get(0),
+            name: row.get(1)        
+        };
+        list.push_back(tags);
+    }   
+    content::Json(json!({"tags" : list}).to_string())
+}
+
 
 fn scale_float_add(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
     if is_lat{
@@ -186,5 +209,5 @@ fn init_post(input : Json<Position>) -> content::Json<String>{
 }
 
 fn main() {
-    rocket::ignite().mount("/", routes![hello,test_db, signin, authenticate,init, init_post]).launch();
+    rocket::ignite().mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags]).launch();
 } 
