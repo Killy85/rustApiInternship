@@ -181,13 +181,6 @@ fn init_post(input : Json<Position>) -> content::Json<String>{
     let conn = Connection::connect("postgres://killy:test123@10.44.2.8:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
 
-
-    println!("SELECT id_company, name, longitude, latitude 
-                FROM company WHERE (latitude > {} AND latitude < {}) 
-                AND (longitude > {} AND longitude < {})",scale_float_sup(input.center_lat, input.zoom_level, true),
-          scale_float_add(input.center_lat, input.zoom_level, true),
-          scale_float_sup(input.center_long, input.zoom_level, false),
-          scale_float_add(input.center_long, input.zoom_level, false));
     for row in &conn.query("SELECT id_company, name, longitude, latitude 
                 FROM company WHERE (latitude > $1 AND latitude < $2) 
                 AND (longitude > $3 AND longitude < $4)",
