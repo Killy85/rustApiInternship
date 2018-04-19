@@ -61,16 +61,15 @@ fn signin(input: Json<User>) -> content::Json<String> {
 
     let result = conn.query(
     r#"
-        INSERT INTO users
-        VALUES ($1,$2,$3,$4)
+        INSERT INTO users (name, firstname, mail, role, password)
+        VALUES ($1,$2,$3,$4,$5)
     "#,
-    &[&input.name, &input.firstname,&input.mail,&input.pswd]);
-    if result.is_ok(){
+    &[&input.name, &input.firstname,&input.mail,&"student",&input.pswd]);
+     if result.is_ok() {
             content::Json(json!({"status" : 200, "message" : "User created"}).to_string())
     }else{
             content::Json(json!({"status" : 404,"message" : "An error occured while creating the user"}).to_string())
     }
-
     }
 
 
