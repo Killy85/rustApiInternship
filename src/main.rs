@@ -183,7 +183,7 @@ fn init_post(input : Json<Position>) -> content::Json<String>{
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
 
 
-    println!("lat : {}, long :{}", Position.center_lat, Position.center_long);
+    println!("lat : {}, long :{}", input.center_lat, input.center_long);
 
     for row in &conn.query("SELECT id_company, name, longitude, latitude 
                 FROM company WHERE (latitude > $1 AND latitude < $2) 
