@@ -106,9 +106,9 @@ fn authenticate(input: Json<ConnectionApp>) -> content::Json<String> {
                 name: user.get(0),
                 firstname: user.get(1),
             }; 
-            content::Json(json!({"status" : "200", "user" : user_conn}).to_string())
+            content::Json(json!({"status" : 200, "user" : user_conn}).to_string())
         }else { 
-            content::Json(json!({"status" : "400", "user" : " "}).to_string())
+            content::Json(json!({"status" : 400, "user" : " "}).to_string())
         }
     }
 
@@ -181,6 +181,9 @@ fn init_post(input : Json<Position>) -> content::Json<String>{
     
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
+
+
+    println!("lat : {}, long :{}", Position.center_lat, Position.center_long);
 
     for row in &conn.query("SELECT id_company, name, longitude, latitude 
                 FROM company WHERE (latitude > $1 AND latitude < $2) 
