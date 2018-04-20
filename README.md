@@ -8,7 +8,10 @@
     
     You have to install Rust before using it 
     You can follow the link to do it :
-    https://doc.rust-lang.org/1.0.0/book/installing-rust.html
+    
+    https://rustup.rs/
+
+    Then follow instructions. Be aware we use Rocket which need the nightly build of Rust. 
 
 ### Installing
     
@@ -26,11 +29,19 @@ To launch the App you have to place tourself in the folder rustApiInternship :
 cd rustApiInternship
 ```    
 
-Then launnch it :
+Then launch it :
 
 ```bash
 cargo run
 ```    
+
+You may also want to build the project using
+
+```bash
+cargo build
+```
+
+You may also use the `--released` while building or running the program in order to let Rust optimizing the build.
 
 ## Authors 
 
