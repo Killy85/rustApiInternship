@@ -68,7 +68,7 @@ fn hello() -> &'static str {
 
 #[post("/auth/signin",format = "application/json", data = "<input>")]
 fn signin(input: Json<User>) -> content::Json<String> {
-    let conn = Connection::connect("postgres://killy:test123@localhost:5432/rustDb",
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
                                TlsMode::None).unwrap();
 
     let result = conn.query(
@@ -87,7 +87,7 @@ fn signin(input: Json<User>) -> content::Json<String> {
 
 #[post("/auth/auth",format = "application/json", data = "<input>")]
 fn authenticate(input: Json<ConnectionApp>) -> content::Json<String> {
-    let conn = Connection::connect("postgres://killy:test123@localhost:5432/rustDb",
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
                                TlsMode::None).unwrap();
     
     let result = conn.query(
@@ -113,7 +113,7 @@ fn authenticate(input: Json<ConnectionApp>) -> content::Json<String> {
 
 #[get("/test-db")]
 fn test_db() -> &'static str {
-    let conn = Connection::connect("postgres://killy:test123@10.44.2.8:5432/rustDb",
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
                                TlsMode::None).unwrap();
     for row in &conn.query("SELECT id_internship FROM internship", &[]).unwrap() {
         let person = Internship {
@@ -127,7 +127,7 @@ fn test_db() -> &'static str {
 #[get("/init")]
 fn init() -> content::Json<String>{
     
-    let conn = Connection::connect("postgres://killy:test123@10.44.2.8:5432/rustDb",TlsMode::None).unwrap();
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
 
     for row in &conn.query("SELECT id_company, name, longitude, latitude FROM company", &[]).unwrap() {
@@ -145,7 +145,7 @@ fn init() -> content::Json<String>{
 #[get("/tags")]
 fn tags() -> content::Json<String>{
     
-    let conn = Connection::connect("postgres://killy:test123@10.44.2.8:5432/rustDb",TlsMode::None).unwrap();
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<Tagsinit> = LinkedList::new(); 
 
     for row in &conn.query("SELECT id_tag, name FROM tag", &[]).unwrap() {
@@ -178,7 +178,7 @@ fn scale_float_sup(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
 #[post("/init", format="application/json", data="<input>")]
 fn init_post(input : Json<Position>) -> content::Json<String>{
     
-    let conn = Connection::connect("postgres://killy:test123@10.44.2.8:5432/rustDb",TlsMode::None).unwrap();
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
 
     for row in &conn.query("SELECT id_company, name, longitude, latitude 
