@@ -66,7 +66,7 @@ fn hello() -> &'static str {
 }
 
 
-#[post("/auth/signin",format = "application/json", data = "<input>")]
+#[post("/signin",format = "application/json", data = "<input>")]
 fn signin(input: Json<User>) -> content::Json<String> {
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
                                TlsMode::None).unwrap();
@@ -85,7 +85,7 @@ fn signin(input: Json<User>) -> content::Json<String> {
     }
 
 
-#[post("/auth/auth",format = "application/json", data = "<input>")]
+#[post("/login",format = "application/json", data = "<input>")]
 fn authenticate(input: Json<ConnectionApp>) -> content::Json<String> {
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
                                TlsMode::None).unwrap();
