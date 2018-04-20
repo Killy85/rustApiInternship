@@ -13,8 +13,8 @@ use rocket::response::content;
 use rocket_contrib::{Json};
 use std::collections::LinkedList;
 
-static X_DELTA : f32 = 0.3541;
-static Y_DELTA : f32 = 1.014;
+static Y_DELTA : f32 = 0.3541;
+static X_DELTA : f32 = 1.014;
 
 #[derive(Serialize, Deserialize)]
 struct User {
