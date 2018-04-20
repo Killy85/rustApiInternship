@@ -1,6 +1,7 @@
 #![feature(plugin, decl_macro, custom_derive)]
 #![plugin(rocket_codegen)]
 
+extern crate rocket_cors;
 extern crate postgres;
 extern crate serde_json;
 extern crate rocket;
@@ -202,5 +203,6 @@ fn init_post(input : Json<Position>) -> content::Json<String>{
 }
 
 fn main() {
-    rocket::ignite().mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags]).launch();
+    let default = rocket_cors::Cors::default();
+    rocket::ignite().attach(default).mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags]).launch();
 } 
