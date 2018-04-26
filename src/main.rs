@@ -23,6 +23,13 @@ struct User {
     mail: String,
     pswd: String
 }
+
+#[derive(Serialize, Deserialize)]
+struct SearchStruct {
+    tags: [String ; 16],
+    contrats: [String ; 4]
+}
+
 #[derive(Serialize, Deserialize)]
 struct ConnectionApp {
     mail: String,
@@ -182,9 +189,6 @@ fn init_post(input : Json<Position>) -> content::Json<String>{
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
 
-
-    println!("lat : {}, long :{}", input.center_lat, input.center_long);
-
     for row in &conn.query("SELECT id_company, name, longitude, latitude 
                 FROM company WHERE (latitude > $1 AND latitude < $2) 
                 AND (longitude > $3 AND longitude < $4)",
@@ -204,6 +208,34 @@ fn init_post(input : Json<Position>) -> content::Json<String>{
     }   
     content::Json(json!({"points" : list}).to_string())
 }
+
+
+#[post("/search_ets", format="application/json", data="<input>")]
+fn search_ets(input : Json<SearchStruct>) -> content::Json<String>{
+    let mut contrats = false;
+    let mut tags = false;
+    let mut query : String;
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
+    if input.contrats.len() > 0 {
+        if input.tags.len() > 0 {
+            
+        }else{
+
+        }
+    } else{
+          if input.tags.len() > 0 {
+            
+        }else{
+            
+        }
+    }
+
+
+
+}
+
+
+
 
 fn main() {
     let default = rocket_cors::Cors::default();
