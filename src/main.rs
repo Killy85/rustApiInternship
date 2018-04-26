@@ -26,8 +26,8 @@ struct User {
 
 #[derive(Serialize, Deserialize)]
 struct SearchStruct {
-    tags: [String ; 16],
-    contrats: [String ; 4]
+    tags: LinkedList<String>,
+    contrats: LinkedList<String>
 }
 
 #[derive(Serialize, Deserialize)]
@@ -212,32 +212,49 @@ fn init_post(input : Json<Position>) -> content::Json<String>{
 
 #[post("/search_ets", format="application/json", data="<input>")]
 fn search_ets(input : Json<SearchStruct>) -> content::Json<String>{
-    let mut contrats = false;
-    let mut tags = false;
-    let mut query : String;
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
-    if input.contrats.len() > 0 {
-        if input.tags.len() > 0 {
+    let mut contrats : String = "".to_string();
+    let mut tags : String = "".to_string();
+    let mut query : String = "".to_string();
+    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
+    let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
+    if input.contrats.len() >0 && input.tags.len() >0 {
+        let first = true;
+       /* for elem in input.contrats{
             
-        }else{
+        }*/
 
+        for elem in input.tags.iter(){
+            tags = tags + elem + "','"
         }
-    } else{
-          if input.tags.len() > 0 {
-            
-        }else{
-            
+        tags.pop(3);
+
+        let result = conn.query(&format!("SELECT Distinct company.id_company, company.name, company.latitude, company.longitude  FROM company 
+                INNER JOIN has_been_made_in on (company.id_company = has_been_made_in.id_company) 
+                INNER JOIN internship on (internship.id_internship = has_been_made_in.id_internship) 
+                INNER JOIN has_tag on (internship.id_internship = has_tag.id_internship)
+                INNER JOIN tag on (tag.id_tag = has_tag.id_tag)
+                 WHERE tag.name in ('{}')", tags),&[]);
+        for row in result.unwrap().iter(){
+            let enterprise = EnterpriseInit {
+            id: row.get(0),
+            name: row.get(1),
+            longitude : row.get(2),
+            latitude : row.get(3)
+        };
+        list.push_back(enterprise);
         }
+        content::Json(json!({"points" : list}).to_string())
+    }else{
+
+        content::Json(json!({"points" :list}).to_string())
+    }
     }
 
-
-
-}
 
 
 
 
 fn main() {
     let default = rocket_cors::Cors::default();
-    rocket::ignite().attach(default).mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags]).launch();
+    rocket::ignite().attach(default).mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags,search_ets]).launch();
 } 
