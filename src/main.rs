@@ -166,15 +166,13 @@ fn tags() -> content::Json<String>{
 }
 
 #[get("/tags_autocomplete/<str>")]
-fn tags_autocomplete(str: String) -> content::Json<String>{
+fn tags_autocomplete(str : String) -> content::Json<String>{
 
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<TagsComplete> = LinkedList::new(); 
-
-    for row in &conn.query("SELECT id_tag, name 
-                            FROM tag 
-                            WHERE name
-                            LIKE %$1%", &[&str]).unwrap() {
+	
+    for row in &conn.query(&format!("SELECT id_tag, name FROM tag WHERE name LIKE '%{}%' ",str ),&[]).unwrap() 
+	{
         let tags = TagsComplete {
             id_tag: row.get(0),
             name: row.get(1)        
