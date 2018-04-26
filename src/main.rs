@@ -231,5 +231,5 @@ fn init_post(input : Json<Position>) -> content::Json<String>{
 
 fn main() {
     let default = rocket_cors::Cors::default();
-    rocket::ignite().attach(default).mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags, tagsAutocomplete]).launch();
+    rocket::ignite().attach(default).mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags, tags_autocomplete]).launch();
 } 
