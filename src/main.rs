@@ -47,6 +47,12 @@ struct Tagsinit {
 
 
 #[derive(Serialize, Deserialize)]
+struct TagsComplete {
+    id_tag: i32,
+    name: String
+}
+
+#[derive(Serialize, Deserialize)]
 struct EnterpriseInit {
     id: i32,
     name: String,
@@ -159,6 +165,24 @@ fn tags() -> content::Json<String>{
     content::Json(json!({"tags" : list}).to_string())
 }
 
+#[get("/tags_autocomplete/<str>")]
+fn tags_autocomplete(str: String) -> content::Json<String>{
+
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
+    let mut list: LinkedList<TagsComplete> = LinkedList::new(); 
+
+    for row in &conn.query("SELECT id_tag, name 
+                            FROM tag 
+                            WHERE name
+                            LIKE %$1%", &[&str]).unwrap() {
+        let tags = TagsComplete {
+            id_tag: row.get(0),
+            name: row.get(1)        
+        };
+        list.push_back(tags);
+    }   
+    content::Json(json!({"tags" : list}).to_string())
+}
 
 fn scale_float_add(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
     if is_lat{
@@ -207,5 +231,5 @@ fn init_post(input : Json<Position>) -> content::Json<String>{
 
 fn main() {
     let default = rocket_cors::Cors::default();
-    rocket::ignite().attach(default).mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags]).launch();
+    rocket::ignite().attach(default).mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags, tagsAutocomplete]).launch();
 } 
