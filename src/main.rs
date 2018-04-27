@@ -26,6 +26,12 @@ struct User {
 }
 
 #[derive(Serialize, Deserialize)]
+struct Contract {
+    id_contract: i32,
+    name: String
+}
+
+#[derive(Serialize, Deserialize)]
 struct Company {
     id_company: i32,
     name: String,
@@ -102,6 +108,34 @@ fn hello() -> &'static str {
     "Welcome to HORO API"
 }
 
+#[post("/init", format="application/json", data="<input>")]
+fn init_post(input : Json<Position>) -> content::Json<String>{
+    
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
+    let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
+
+
+    println!("lat : {}, long :{}", input.center_lat, input.center_long);
+
+    for row in &conn.query("SELECT id_company, name, longitude, latitude 
+                FROM company WHERE (latitude > $1 AND latitude < $2) 
+                AND (longitude > $3 AND longitude < $4)",
+          &[&scale_float_sup(input.center_lat, input.zoom_level, true),
+          &scale_float_add(input.center_lat, input.zoom_level, true),
+          &scale_float_sup(input.center_long, input.zoom_level, false),
+          &scale_float_add(input.center_long, input.zoom_level, false)
+          ])
+          .unwrap() {
+        let enterprise = EnterpriseInit {
+            id: row.get(0),
+            name: row.get(1),
+            longitude : row.get(2),
+            latitude : row.get(3)
+        };
+        list.push_back(enterprise);
+    }   
+    content::Json(json!({"points" : list}).to_string())
+}
 
 #[post("/signin",format = "application/json", data = "<input>")]
 fn signin(input: Json<User>) -> content::Json<String> {
@@ -249,6 +283,22 @@ fn tags_autocomplete(str : String) -> content::Json<String>{
     content::Json(json!({"tags" : list}).to_string())
 }
 
+#[get("/contract")]
+fn tags() -> content::Json<String>{
+    
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
+    let mut list: LinkedList<Contract> = LinkedList::new(); 
+
+    for row in &conn.query("SELECT id_contract, name FROM contract", &[]).unwrap() {
+        let contract = Contract {
+            id_contract: row.get(0),
+            name: row.get(1)        
+        };
+        list.push_back(contract);
+    }   
+    content::Json(json!({"contract" : list}).to_string())
+}
+
 fn scale_float_add(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
     if is_lat{
         input + (Y_DELTA * (zoom_level as f32/10.0))
@@ -263,35 +313,6 @@ fn scale_float_sup(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
     }else{
         input - (X_DELTA * (zoom_level as f32/10.0))
     }
-}
-
-#[post("/init", format="application/json", data="<input>")]
-fn init_post(input : Json<Position>) -> content::Json<String>{
-    
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
-    let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
-
-
-    println!("lat : {}, long :{}", input.center_lat, input.center_long);
-
-    for row in &conn.query("SELECT id_company, name, longitude, latitude 
-                FROM company WHERE (latitude > $1 AND latitude < $2) 
-                AND (longitude > $3 AND longitude < $4)",
-          &[&scale_float_sup(input.center_lat, input.zoom_level, true),
-          &scale_float_add(input.center_lat, input.zoom_level, true),
-          &scale_float_sup(input.center_long, input.zoom_level, false),
-          &scale_float_add(input.center_long, input.zoom_level, false)
-          ])
-          .unwrap() {
-        let enterprise = EnterpriseInit {
-            id: row.get(0),
-            name: row.get(1),
-            longitude : row.get(2),
-            latitude : row.get(3)
-        };
-        list.push_back(enterprise);
-    }   
-    content::Json(json!({"points" : list}).to_string())
 }
 
 fn main() {
