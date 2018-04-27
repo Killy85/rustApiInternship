@@ -5,6 +5,9 @@ extern crate rocket_cors;
 extern crate postgres;
 extern crate serde_json;
 extern crate rocket;
+extern crate chrono;
+extern crate yyid;
+
 #[macro_use] extern crate rocket_contrib;
 #[macro_use] extern crate serde_derive;
 
@@ -12,6 +15,13 @@ use postgres::{Connection, TlsMode};
 use rocket::response::content;
 use rocket_contrib::{Json};
 use std::collections::LinkedList;
+use chrono::prelude::*;
+use chrono::{Duration, Utc};
+use rocket::request::{Request,FromRequest};
+use rocket::request;
+use rocket::Outcome;
+use rocket::http::Status;
+use yyid::yyid_string;
 
 static Y_DELTA : f32 = 0.3541;
 static X_DELTA : f32 = 1.014;
@@ -23,6 +33,15 @@ struct User {
     mail: String,
     pswd: String
 }
+
+#[derive(Serialize, Deserialize)]
+struct TokenReturn {
+    value : String,
+    date : String 
+}
+
+#[derive(Serialize, Deserialize)]
+struct Token(String);
 
 #[derive(Serialize, Deserialize)]
 struct SearchStruct {
@@ -68,15 +87,86 @@ struct Position{
     zoom_level : i16
 }
 
+fn is_valid(key: &str) -> bool {
+    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",
+                               TlsMode::None).unwrap();
+
+    let result = conn.query(r#"SELECT date from token where value = $1"#, &[&key]).unwrap();
+    if result.len() == 1 {
+            let now = Utc::now();
+            let date : String= result.get(0).get(0);
+            let token_date = date.parse::<DateTime<Utc>>().unwrap();
+            let diff = token_date - now;
+            
+            if diff > Duration::days(7) {
+                false
+            } else {
+                let result = conn.query("UPDATE token set date = $1 where value = $2", &[&now.to_string(), &key]);
+                result.is_ok()
+            }
+    }else {
+            false
+    }
+
+}
+
+impl<'a, 'r> FromRequest<'a, 'r> for Token {
+    type Error = ();
+
+    fn from_request(request: &'a Request<'r>) -> request::Outcome<Token,()> {
+        
+        let keys: Vec<_> = request.headers().get("Authorization").collect();
+        if keys.len() != 1 {
+            return Outcome::Failure((Status::new(401, "Your auth token is missing from the request headers"), ()));
+        }
+
+        let key = keys[0];
+        if !is_valid(keys[0]) {
+            return Outcome::Failure((Status::new(401, "Your auth token is invalid"), ()));
+        }
+
+        return Outcome::Success(Token(key.to_string()));
+    }
+}
+
 #[get("/")]
 fn hello() -> &'static str {
     "Welcome to HORO API"
 }
 
+#[post("/refresh_token",format = "application/json", data = "<input>")]
+fn refresh_token(input: Json<ConnectionApp>) -> content::Json<String> {
+    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",
+                               TlsMode::None).unwrap();
+    let dt = Utc::now();
+    let result = conn.query(
+    r#"
+        SELECT value, date from token natural join users    
+        WHERE mail = $1
+        AND password = $2
+    "#,
+    &[&input.mail, &input.pswd]).unwrap();
+     if result.len() == 1 {
+         let token_value = result.get(0);
+         let token = TokenReturn{
+             value : token_value.get(0),
+             date : token_value.get(1)
+         };
+            let result = conn.query("UPDATE token set date = $1 where value = $2", &[&dt.to_string(), &token.value]);
+                content::Json(json!({"status" : 200, "user_token" : token.value}).to_string())
+        }else { 
+            let result = conn.query("Select id_user from users where mail = $1", &[&input.mail]);
+            let id : i32 = result.unwrap().get(0).get(0);
+            let token_str = yyid_string();
+            let result = conn.query("INSERT into token (value, date, id_user) VALUES ($1,$2,$3)",&[&token_str,&Utc::now().to_string(),&id]);
+            content::Json(json!({"status" : 200, "message" : "Token Created", "token" : token_str}).to_string())
+        }
+}
+
 
 #[post("/signin",format = "application/json", data = "<input>")]
 fn signin(input: Json<User>) -> content::Json<String> {
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
+    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",
                                TlsMode::None).unwrap();
 
     let result = conn.query(
@@ -86,7 +176,11 @@ fn signin(input: Json<User>) -> content::Json<String> {
     "#,
     &[&input.name, &input.firstname,&input.mail,&"student",&input.pswd]);
      if result.is_ok() {
-            content::Json(json!({"status" : 200, "message" : "User created"}).to_string())
+            let result = conn.query("Select id_user from users where mail = $1", &[&input.mail]);
+            let id : i32 = result.unwrap().get(0).get(0);
+            let token_str = yyid_string();
+            let result = conn.query("INSERT into token (value, date, id_user) VALUES ($1,$2,$3)",&[&token_str,&Utc::now().to_string(),&id]);
+            content::Json(json!({"status" : 200, "message" : "User created", "token" : token_str}).to_string())
     }else{
             content::Json(json!({"status" : 404,"message" : "An error occured while creating the user"}).to_string())
     }
@@ -100,7 +194,7 @@ fn authenticate(input: Json<ConnectionApp>) -> content::Json<String> {
     
     let result = conn.query(
     r#"
-        SELECT name, firstname
+        SELECT id_user,name, firstname
         FROM users
         WHERE mail = $1
         AND password = $2
@@ -110,10 +204,18 @@ fn authenticate(input: Json<ConnectionApp>) -> content::Json<String> {
         if !result.is_empty() && result.len() == 1 {
             let user = result.get(0);
             let user_conn = Connected{
-                name: user.get(0),
-                firstname: user.get(1),
+                name: user.get(1),
+                firstname: user.get(2),
             }; 
-            content::Json(json!({"status" : 200, "user" : user_conn}).to_string())
+            let id : i32 = user.get(0);
+            let result = conn.query(
+                r#"
+                    SELECT value from token     
+                    WHERE id_user = $1
+                "#,
+            &[&id]).unwrap();
+            let token_str : String = result.get(0).get(0);
+            content::Json(json!({"status" : 200, "user" : user_conn, "token" : token_str}).to_string())
         }else { 
             content::Json(json!({"status" : 400, "user" : " "}).to_string())
         }
@@ -133,7 +235,7 @@ fn test_db() -> &'static str {
 }       
 
 #[get("/init")]
-fn init() -> content::Json<String>{
+fn init(token : Token) -> content::Json<String>{
     
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
@@ -226,7 +328,9 @@ fn search_ets(input : Json<SearchStruct>) -> content::Json<String>{
         for elem in input.tags.iter(){
             tags = tags + elem + "','"
         }
-        tags.pop(3);
+        tags.pop();
+        tags.pop();
+        tags.pop();
 
         let result = conn.query(&format!("SELECT Distinct company.id_company, company.name, company.latitude, company.longitude  FROM company 
                 INNER JOIN has_been_made_in on (company.id_company = has_been_made_in.id_company) 
@@ -250,11 +354,7 @@ fn search_ets(input : Json<SearchStruct>) -> content::Json<String>{
     }
     }
 
-
-
-
-
 fn main() {
     let default = rocket_cors::Cors::default();
-    rocket::ignite().attach(default).mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags,search_ets]).launch();
+    rocket::ignite().attach(default).mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags,search_ets,refresh_token]).launch();
 } 
