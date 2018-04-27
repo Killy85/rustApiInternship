@@ -23,6 +23,21 @@ struct User {
     mail: String,
     pswd: String
 }
+
+#[derive(Serialize, Deserialize)]
+struct Company {
+    id_company: i32,
+    name: String,
+    adress: String,
+    longitude: f32,
+    latitude: f32,
+    mail_hr: String,
+    website_company: String,
+    country : String,
+    city: String,
+    zip_code: String
+}
+
 #[derive(Serialize, Deserialize)]
 struct ConnectionApp {
     mail: String,
@@ -117,6 +132,25 @@ fn authenticate(input: Json<ConnectionApp>) -> content::Json<String> {
             content::Json(json!({"status" : 400, "user" : " "}).to_string())
         }
     }
+
+
+#[post("/create_company",format = "application/json", data = "<input>")]
+fn create_company(input: Json<Company>) -> content::Json<String> {
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
+                               TlsMode::None).unwrap();
+
+    let result = conn.query(
+    r#"
+        INSERT INTO company (id_company, name, adress, longitude, latitude, mail_hr, website_company, country, city, zip_code)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    "#,
+    &[&input.id_company, &input.name, &input.adress, &input.longitude, &input.latitude, &input.mail_hr, &input.website_company, &input.country, &input.city, &input.zip_code]);
+     if result.is_ok() {
+            content::Json(json!({"status" : 200, "message" : "Company created"}).to_string())
+    }else{
+            content::Json(json!({"status" : 404,"message" : "An error occured while creating the company"}).to_string())
+    }
+}
 
 #[get("/test-db")]
 fn test_db() -> &'static str {
@@ -229,5 +263,5 @@ fn init_post(input : Json<Position>) -> content::Json<String>{
 
 fn main() {
     let default = rocket_cors::Cors::default();
-    rocket::ignite().attach(default).mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags, tags_autocomplete]).launch();
+    rocket::ignite().attach(default).mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags, tags_autocomplete, create_company]).launch();
 } 
