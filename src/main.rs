@@ -12,6 +12,7 @@ use postgres::{Connection, TlsMode};
 use rocket::response::content;
 use rocket_contrib::{Json};
 use std::collections::LinkedList;
+use chrono::{NaiveDate, NaiveDateTime};
 
 static Y_DELTA : f32 = 0.3541;
 static X_DELTA : f32 = 1.014;
@@ -36,6 +37,20 @@ struct Company {
     country : String,
     city: String,
     zip_code: i32
+}
+
+#[derive(Serialize, Deserialize)]
+struct CreateInternship {
+    id_internship: i32,
+    name: String,
+    id_user: i32,
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+    degree: String,
+    description: String,
+    type_of_contract : String,
+    pros: String,
+    cons: String
 }
 
 #[derive(Serialize, Deserialize)]
@@ -152,6 +167,24 @@ fn create_company(input: Json<Company>) -> content::Json<String> {
     }
 }
 
+#[post("/create_internship",format = "application/json", data = "<input>")]
+fn create_internship(input: Json<CreateInternship>) -> content::Json<String> {
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
+                               TlsMode::None).unwrap();
+
+    let result = conn.query(
+    r#"
+        INSERT INTO company (id_internship, name, id_user, start_date, end_date, degree, description, type_of_contract, pros, cons)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    "#,
+    &[&input.id_internship, &input.name, &input.id_user, &input.start_date, &input.end_date, &input.degree, &input.description, &input.type_of_contract, &input.pros, &input.cons]);
+     if result.is_ok() {
+            content::Json(json!({"status" : 200, "message" : "Internship created"}).to_string())
+    }else{
+            content::Json(json!({"status" : 404,"message" : "An error occured while creating the internship"}).to_string())
+    }
+}
+
 #[get("/test-db")]
 fn test_db() -> &'static str {
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
@@ -263,5 +296,5 @@ fn init_post(input : Json<Position>) -> content::Json<String>{
 
 fn main() {
     let default = rocket_cors::Cors::default();
-    rocket::ignite().attach(default).mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags, tags_autocomplete, create_company]).launch();
+    rocket::ignite().attach(default).mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags, tags_autocomplete, create_company, create_internship]).launch();
 } 
