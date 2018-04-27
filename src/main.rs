@@ -221,19 +221,6 @@ fn authenticate(input: Json<ConnectionApp>) -> content::Json<String> {
         }
     }
 
-#[get("/test-db")]
-fn test_db() -> &'static str {
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
-                               TlsMode::None).unwrap();
-    for row in &conn.query("SELECT id_internship FROM internship", &[]).unwrap() {
-        let person = Internship {
-            id: row.get(0)
-        };
-        println!("Found person {}",person.id);
-    }
-    "oui"
-}       
-
 #[get("/init")]
 fn init(token : Token) -> content::Json<String>{
     
@@ -253,7 +240,7 @@ fn init(token : Token) -> content::Json<String>{
 }
 
 #[get("/tags")]
-fn tags() -> content::Json<String>{
+fn tags(token :Token ) -> content::Json<String>{
     
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<Tagsinit> = LinkedList::new(); 
@@ -286,7 +273,7 @@ fn scale_float_sup(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
 }
 
 #[post("/init", format="application/json", data="<input>")]
-fn init_post(input : Json<Position>) -> content::Json<String>{
+fn init_post(token : Token, input : Json<Position>) -> content::Json<String>{
     
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
@@ -313,7 +300,7 @@ fn init_post(input : Json<Position>) -> content::Json<String>{
 
 
 #[post("/search_ets", format="application/json", data="<input>")]
-fn search_ets(input : Json<SearchStruct>) -> content::Json<String>{
+fn search_ets(token : Token,input : Json<SearchStruct>) -> content::Json<String>{
     let mut contrats : String = "".to_string();
     let mut tags : String = "".to_string();
     let mut query : String = "".to_string();
@@ -356,5 +343,5 @@ fn search_ets(input : Json<SearchStruct>) -> content::Json<String>{
 
 fn main() {
     let default = rocket_cors::Cors::default();
-    rocket::ignite().attach(default).mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags,search_ets,refresh_token]).launch();
+    rocket::ignite().attach(default).mount("/", routes![hello, signin, authenticate,init, init_post, tags,search_ets,refresh_token]).launch();
 } 
