@@ -35,7 +35,7 @@ struct Company {
     website_company: String,
     country : String,
     city: String,
-    zip_code: String
+    zip_code: i32
 }
 
 #[derive(Serialize, Deserialize)]
