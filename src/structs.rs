@@ -1,3 +1,6 @@
+#![feature(plugin, decl_macro, custom_derive)]
+#![plugin(rocket_codegen)]
+
 #[derive(Serialize, Deserialize)]
 struct User {
     name: String,

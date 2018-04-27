@@ -1,11 +1,13 @@
 #![feature(plugin, decl_macro, custom_derive)]
 #![plugin(rocket_codegen)]
 
-mod struct;
+mod structs;
 extern crate rocket_cors;
 extern crate postgres;
 extern crate serde_json;
 extern crate rocket;
+extern crate chrono;
+
 #[macro_use] extern crate rocket_contrib;
 #[macro_use] extern crate serde_derive;
 
@@ -14,6 +16,7 @@ use rocket::response::content;
 use rocket_contrib::{Json};
 use std::collections::LinkedList;
 use chrono::{NaiveDate, NaiveDateTime};
+use structs::*;
 
 static Y_DELTA : f32 = 0.3541;
 static X_DELTA : f32 = 1.014;
@@ -199,7 +202,7 @@ fn tags_autocomplete(str : String) -> content::Json<String>{
 }
 
 #[get("/contract")]
-fn tags() -> content::Json<String>{
+fn contract() -> content::Json<String>{
     
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<Contract> = LinkedList::new(); 
@@ -232,5 +235,5 @@ fn scale_float_sup(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
 
 fn main() {
     let default = rocket_cors::Cors::default();
-    rocket::ignite().attach(default).mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags, tags_autocomplete, create_company, create_internship]).launch();
+    rocket::ignite().attach(default).mount("/", routes![hello,test_db, signin, authenticate,init, init_post, tags, tags_autocomplete, create_company, create_internship, contract]).launch();
 } 
