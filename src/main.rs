@@ -283,9 +283,9 @@ fn create_company(input: Json<Company>) -> content::Json<String> {
             content::Json(json!({"status" : 404,"message" : "An error occured while creating the company"}).to_string())
     }
 }
-/*
+
 #[post("/create_internship",format = "application/json", data = "<input>")]
-fn create_internship(input: Json<CreateInternship>) -> content::Json<String> {
+fn create_internship(token :Token,input: Json<CreateInternship>) -> content::Json<String> {
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
                                TlsMode::None).unwrap();
 
@@ -300,7 +300,7 @@ fn create_internship(input: Json<CreateInternship>) -> content::Json<String> {
     }else{
             content::Json(json!({"status" : 404,"message" : "An error occured while creating the internship"}).to_string())
     }
-}*/
+}
 
 #[get("/test-db")]
 fn test_db() -> &'static str {

@@ -8,8 +8,8 @@ rocket_cors= "*"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-chrono   = {version ="*", features = ["serde"] }
-postgres = { version = "0.13", features = ["with-chrono"] }
+chrono   = {version ="0.4.2", features = ["serde"] }
+postgres = { version = "*", features = ["with-chrono"] }
 rocket = "0.3.8"
 rocket_codegen = "0.3.8"
 yyid = "*"
