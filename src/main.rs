@@ -16,15 +16,18 @@ use rocket::response::content;
 use rocket_contrib::{Json};
 use std::collections::LinkedList;
 use chrono::prelude::*;
-use chrono::{Duration, Utc};
+use chrono::{Duration, Utc,NaiveDate, NaiveDateTime};
 use rocket::request::{Request,FromRequest};
 use rocket::request;
 use rocket::Outcome;
 use rocket::http::Status;
 use yyid::yyid_string;
 
+
+
 static Y_DELTA : f32 = 0.3541;
 static X_DELTA : f32 = 1.014;
+
 
 #[derive(Serialize, Deserialize)]
 struct User {
@@ -47,6 +50,41 @@ struct Token(String);
 struct SearchStruct {
     tags: LinkedList<String>,
     contrats: LinkedList<String>
+
+}
+
+#[derive(Serialize, Deserialize)]
+struct Contract {
+    id_contract: i32,
+    name: String
+}
+
+#[derive(Serialize, Deserialize)]
+struct Company {
+    id_company: i32,
+    name: String,
+    adress: String,
+    longitude: f32,
+    latitude: f32,
+    mail_hr: String,
+    website_company: String,
+    country : String,
+    city: String,
+    zip_code: i32
+}
+
+#[derive(Serialize, Deserialize)]
+struct CreateInternship {
+    id_internship: i32,
+    name: String,
+    id_user: i32,
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+    degree: String,
+    description: String,
+    type_of_contract : String,
+    pros: String,
+    cons: String
 }
 
 #[derive(Serialize, Deserialize)]
@@ -71,6 +109,12 @@ struct Tagsinit {
     name: String
 }
 
+
+#[derive(Serialize, Deserialize)]
+struct TagsComplete {
+    id_tag: i32,
+    name: String
+}
 
 #[derive(Serialize, Deserialize)]
 struct EnterpriseInit {
@@ -221,6 +265,56 @@ fn authenticate(input: Json<ConnectionApp>) -> content::Json<String> {
         }
     }
 
+
+#[post("/create_company",format = "application/json", data = "<input>")]
+fn create_company(input: Json<Company>) -> content::Json<String> {
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
+                               TlsMode::None).unwrap();
+
+    let result = conn.query(
+    r#"
+        INSERT INTO company (id_company, name, adress, longitude, latitude, mail_hr, website_company, country, city, zip_code)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    "#,
+    &[&input.id_company, &input.name, &input.adress, &input.longitude, &input.latitude, &input.mail_hr, &input.website_company, &input.country, &input.city, &input.zip_code]);
+     if result.is_ok() {
+            content::Json(json!({"status" : 200, "message" : "Company created"}).to_string())
+    }else{
+            content::Json(json!({"status" : 404,"message" : "An error occured while creating the company"}).to_string())
+    }
+}
+/*
+#[post("/create_internship",format = "application/json", data = "<input>")]
+fn create_internship(input: Json<CreateInternship>) -> content::Json<String> {
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
+                               TlsMode::None).unwrap();
+
+    let result = conn.query(
+    r#"
+        INSERT INTO company (id_internship, name, id_user, start_date, end_date, degree, description, type_of_contract, pros, cons)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    "#,
+    &[&input.id_internship, &input.name, &input.id_user, &input.start_date, &input.end_date, &input.degree, &input.description, &input.type_of_contract, &input.pros, &input.cons]);
+     if result.is_ok() {
+            content::Json(json!({"status" : 200, "message" : "Internship created"}).to_string())
+    }else{
+            content::Json(json!({"status" : 404,"message" : "An error occured while creating the internship"}).to_string())
+    }
+}*/
+
+#[get("/test-db")]
+fn test_db() -> &'static str {
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
+                               TlsMode::None).unwrap();
+    for row in &conn.query("SELECT id_internship FROM internship", &[]).unwrap() {
+        let person = Internship {
+            id: row.get(0)
+        };
+        println!("Found person {}",person.id);
+    }
+    "oui"
+}       
+
 #[get("/init")]
 fn init(token : Token) -> content::Json<String>{
     
@@ -255,6 +349,38 @@ fn tags(token :Token ) -> content::Json<String>{
     content::Json(json!({"tags" : list}).to_string())
 }
 
+#[get("/tags_autocomplete/<str>")]
+fn tags_autocomplete(str : String) -> content::Json<String>{
+
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
+    let mut list: LinkedList<TagsComplete> = LinkedList::new(); 
+	
+    for row in &conn.query(&format!("SELECT id_tag, name FROM tag WHERE name LIKE '%{}%' ",str ),&[]).unwrap() 
+	{
+        let tags = TagsComplete {
+            id_tag: row.get(0),
+            name: row.get(1)        
+        };
+        list.push_back(tags);
+    }   
+    content::Json(json!({"tags" : list}).to_string())
+}
+
+#[get("/contract")]
+fn contract() -> content::Json<String>{
+    
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
+    let mut list: LinkedList<Contract> = LinkedList::new(); 
+
+    for row in &conn.query("SELECT id_contract, name FROM contract", &[]).unwrap() {
+        let contract = Contract {
+            id_contract: row.get(0),
+            name: row.get(1)        
+        };
+        list.push_back(contract);
+    }   
+    content::Json(json!({"contract" : list}).to_string())
+}
 
 fn scale_float_add(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
     if is_lat{
@@ -343,5 +469,5 @@ fn search_ets(token : Token,input : Json<SearchStruct>) -> content::Json<String>
 
 fn main() {
     let default = rocket_cors::Cors::default();
-    rocket::ignite().attach(default).mount("/", routes![hello, signin, authenticate,init, init_post, tags,search_ets,refresh_token]).launch();
+    rocket::ignite().attach(default).mount("/", routes![hello, signin, authenticate,init, init_post, tags, tags_autocomplete, create_company, /*create_internship,*/ contract,search_ets,refresh_token]).launch();
 } 
