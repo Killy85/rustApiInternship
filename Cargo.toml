@@ -4,12 +4,15 @@ version = "0.1.0"
 authors = ["Killy85 <goureau.n.a@hotmail.fr>"]
 
 [dependencies]
+rocket_cors= "*"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-postgres = "*"
+chrono   = {version ="0.4.2", features = ["serde"] }
+postgres = { version = "*", features = ["with-chrono"] }
 rocket = "0.3.8"
 rocket_codegen = "0.3.8"
+yyid = "*"
 
 [dependencies.rocket_contrib]
 version = "0.3"
