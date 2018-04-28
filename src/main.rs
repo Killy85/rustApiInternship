@@ -132,7 +132,7 @@ struct Position{
 }
 
 fn is_valid(key: &str) -> bool {
-    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
                                TlsMode::None).unwrap();
 
     let result = conn.query(r#"SELECT date from token where value = $1"#, &[&key]).unwrap();
@@ -180,7 +180,7 @@ fn hello() -> &'static str {
 
 #[post("/refresh_token",format = "application/json", data = "<input>")]
 fn refresh_token(input: Json<ConnectionApp>) -> content::Json<String> {
-    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
                                TlsMode::None).unwrap();
     let dt = Utc::now();
     let result = conn.query(
@@ -210,7 +210,7 @@ fn refresh_token(input: Json<ConnectionApp>) -> content::Json<String> {
 
 #[post("/signin",format = "application/json", data = "<input>")]
 fn signin(input: Json<User>) -> content::Json<String> {
-    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
                                TlsMode::None).unwrap();
 
     let result = conn.query(
@@ -430,7 +430,7 @@ fn search_ets(token : Token,input : Json<SearchStruct>) -> content::Json<String>
     let mut contrats : String = "".to_string();
     let mut tags : String = "".to_string();
     let mut query : String = "".to_string();
-    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
     if input.contrats.len() >0 && input.tags.len() >0 {
         let first = true;
