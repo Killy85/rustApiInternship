@@ -132,26 +132,22 @@ struct Position{
 }
 
 fn is_valid(key: &str) -> bool {
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
+    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",
                                TlsMode::None).unwrap();
 
-    let result = conn.query(r#"SELECT date from token where value = $1"#, &[&key]).unwrap();
-    if result.len() == 1 {
-            let now = Utc::now();
-            let date : String= result.get(0).get(0);
-            let token_date = date.parse::<DateTime<Utc>>().unwrap();
-            let diff = token_date - now;
-            
-            if diff > Duration::days(7) {
-                false
-            } else {
-                let result = conn.query("UPDATE token set date = $1 where value = $2", &[&now.to_string(), &key]);
-                result.is_ok()
-            }
-    }else {
-            false
+    let result = conn.query(r#"SELECT date from token where value='5d99f548-1168-c4c2-bf6a-1deb56bcda8e'"#, &[]);
+    let mut count = 0;
+    for _ in result.unwrap().iter(){
+        count+=1;
     }
-
+    if count ==1 {
+            let now = Utc::now();
+            let result = conn.query("UPDATE token set date = $1 where value = $2", &[&now.to_string(), &key]);
+            result.is_ok()
+    }
+    else{
+        false
+    }
 }
 
 impl<'a, 'r> FromRequest<'a, 'r> for Token {
@@ -318,7 +314,7 @@ fn test_db() -> &'static str {
 #[get("/init")]
 fn init(token : Token) -> content::Json<String>{
     
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
+    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
 
     for row in &conn.query("SELECT id_company, name, longitude, latitude FROM company", &[]).unwrap() {
@@ -350,7 +346,7 @@ fn tags(token :Token ) -> content::Json<String>{
 }
 
 #[get("/tags_autocomplete/<str>")]
-fn tags_autocomplete(str : String) -> content::Json<String>{
+fn tags_autocomplete(token : Token,str : String) -> content::Json<String>{
 
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<TagsComplete> = LinkedList::new(); 
