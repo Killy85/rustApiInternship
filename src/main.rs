@@ -61,7 +61,6 @@ struct Contract {
 
 #[derive(Serialize, Deserialize)]
 struct Company {
-    id_company: i32,
     name: String,
     adress: String,
     longitude: f32,
@@ -134,8 +133,7 @@ struct Position{
 fn is_valid(key: &str) -> bool {
     let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",
                                TlsMode::None).unwrap();
-
-    let result = conn.query(r#"SELECT date from token where value='5d99f548-1168-c4c2-bf6a-1deb56bcda8e'"#, &[]);
+    let result = conn.query(&format!("SELECT date from token where value='{}'", key), &[]);
     let mut count = 0;
     for _ in result.unwrap().iter(){
         count+=1;
@@ -269,10 +267,10 @@ fn create_company(input: Json<Company>) -> content::Json<String> {
 
     let result = conn.query(
     r#"
-        INSERT INTO company (id_company, name, adress, longitude, latitude, mail_hr, website_company, country, city, zip_code)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        INSERT INTO company (name, adress, longitude, latitude, mail_hr, website_company, country, city, zip_code)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
     "#,
-    &[&input.id_company, &input.name, &input.adress, &input.longitude, &input.latitude, &input.mail_hr, &input.website_company, &input.country, &input.city, &input.zip_code]);
+    &[&input.name, &input.adress, &input.longitude, &input.latitude, &input.mail_hr, &input.website_company, &input.country, &input.city, &input.zip_code]);
      if result.is_ok() {
             content::Json(json!({"status" : 200, "message" : "Company created"}).to_string())
     }else{
