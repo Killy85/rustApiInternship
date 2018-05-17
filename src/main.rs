@@ -14,7 +14,8 @@ use postgres::{Connection, TlsMode};
 use rocket::response::content;
 use rocket_contrib::{Json};
 use std::collections::LinkedList;
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::prelude::*;
+
 
 #[derive(Serialize, Deserialize)]
 struct User {
@@ -46,14 +47,13 @@ struct Company {
 
 #[derive(Serialize, Deserialize)]
 struct CreateInternship {
-    id_internship: i32,
     name: String,
     id_user: i32,
-    start_date: NaiveDate,
-    end_date: NaiveDate,
+    start_date: String,
+    end_date: String,
     degree: String,
     description: String,
-    type_of_contract : String,
+    type_of_contrat : i32,
     pros: String,
     cons: String
 }
@@ -206,20 +206,25 @@ fn create_company(input: Json<Company>) -> content::Json<String> {
 
 #[post("/create_internship",format = "application/json", data = "<input>")]
 fn create_internship(input: Json<CreateInternship>) -> content::Json<String> {
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
+    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",
                                TlsMode::None).unwrap();
+    
+    let start_date = date_converter(input.start_date.clone());
+    let end_date = date_converter(input.end_date.clone());
 
     let result = conn.query(
     r#"
-        INSERT INTO company (id_internship, name, id_user, start_date, end_date, degree, description, type_of_contract, pros, cons)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        INSERT INTO internship (name, id_user, start_date, end_date, degree, description, type_of_contrat, pros, cons)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
     "#,
-    &[&input.id_internship, &input.name, &input.id_user, &input.start_date, &input.end_date, &input.degree, &input.description, &input.type_of_contract, &input.pros, &input.cons]);
+    &[&input.name, &input.id_user, &start_date, &end_date, &input.degree, &input.description, &input.type_of_contrat, &input.pros, &input.cons]);
      if result.is_ok() {
             content::Json(json!({"status" : 200, "message" : "Internship created"}).to_string())
     }else{
+            println!("{}",result.unwrap_err());
             content::Json(json!({"status" : 404,"message" : "An error occured while creating the internship"}).to_string())
     }
+
 }
 
 #[get("/test-db")]
@@ -317,6 +322,18 @@ fn scale_float_sup(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
         input - (X_DELTA * (zoom_level as f32/10.0))
     }
 }
+
+fn date_converter(date: String) -> chrono::NaiveDate {
+
+        let date : Vec<_> = date.split("/").collect();
+
+        //from_ymd(year: i32, month: u32, day: u32)
+        let date_fmt = NaiveDate::from_ymd(date[2].parse::<i32>().unwrap(), date[1].parse::<u32>().unwrap(), date[0].parse::<u32>().unwrap());
+
+
+
+        return date_fmt;
+    }
 
 fn main() {
     let default = rocket_cors::Cors::default();
