@@ -50,7 +50,6 @@ struct Token(String);
 struct SearchStruct {
     tags: LinkedList<String>,
     contrats: LinkedList<i32>
-
 }
 
 #[derive(Serialize, Deserialize)]
