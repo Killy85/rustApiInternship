@@ -436,7 +436,7 @@ fn init_post(token : Token, input : Json<Position>) -> content::Json<String>{
 
 
 #[post("/search_ets", format="application/json", data="<input>")]
-fn search_ets(input : Json<SearchStruct>) -> content::Json<String>{
+fn search_ets(token : Token,input : Json<SearchStruct>) -> content::Json<String>{
     let mut contrats : String = "".to_string();
     let tags : String;
     let mut internship : String = "".to_string();
