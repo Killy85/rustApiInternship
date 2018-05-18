@@ -45,5 +45,5 @@ You may also use the `--released` while building or running the program in order
 
 ## Authors 
 
-    Me and @MathiasLoiret 
+    Me, @MathiasLoiret and @Bloodess
 
