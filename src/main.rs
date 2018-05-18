@@ -49,7 +49,7 @@ struct Token(String);
 #[derive(Serialize, Deserialize)]
 struct SearchStruct {
     tags: LinkedList<String>,
-    contrats: LinkedList<String>
+    contrats: LinkedList<i32>
 
 }
 
@@ -74,14 +74,13 @@ struct Company {
 
 #[derive(Serialize, Deserialize)]
 struct CreateInternship {
-    id_internship: i32,
     name: String,
     id_user: i32,
-    start_date: NaiveDate,
-    end_date: NaiveDate,
+    start_date: String,
+    end_date: String,
     degree: String,
     description: String,
-    type_of_contract : String,
+    type_of_contrat : i32,
     pros: String,
     cons: String
 }
@@ -282,18 +281,23 @@ fn create_company(input: Json<Company>) -> content::Json<String> {
 fn create_internship(token :Token,input: Json<CreateInternship>) -> content::Json<String> {
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
                                TlsMode::None).unwrap();
+    
+    let start_date = date_converter(input.start_date.clone());
+    let end_date = date_converter(input.end_date.clone());
 
     let result = conn.query(
     r#"
-        INSERT INTO company (id_internship, name, id_user, start_date, end_date, degree, description, type_of_contract, pros, cons)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        INSERT INTO internship (name, id_user, start_date, end_date, degree, description, type_of_contrat, pros, cons)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
     "#,
-    &[&input.id_internship, &input.name, &input.id_user, &input.start_date, &input.end_date, &input.degree, &input.description, &input.type_of_contract, &input.pros, &input.cons]);
+    &[&input.name, &input.id_user, &start_date, &end_date, &input.degree, &input.description, &input.type_of_contrat, &input.pros, &input.cons]);
      if result.is_ok() {
             content::Json(json!({"status" : 200, "message" : "Internship created"}).to_string())
     }else{
+            println!("{}",result.unwrap_err());
             content::Json(json!({"status" : 404,"message" : "An error occured while creating the internship"}).to_string())
     }
+
 }
 
 #[get("/test-db")]
@@ -392,6 +396,19 @@ fn scale_float_sup(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
     }
 }
 
+fn date_converter(date: String) -> chrono::NaiveDate {
+
+        let date : Vec<_> = date.split("/").collect();
+
+        //from_ymd(year: i32, month: u32, day: u32)
+        let date_fmt = NaiveDate::from_ymd(date[2].parse::<i32>().unwrap(), date[1].parse::<u32>().unwrap(), date[0].parse::<u32>().unwrap());
+
+
+
+        return date_fmt;
+}
+
+
 #[post("/init", format="application/json", data="<input>")]
 fn init_post(token : Token, input : Json<Position>) -> content::Json<String>{
     
@@ -420,46 +437,71 @@ fn init_post(token : Token, input : Json<Position>) -> content::Json<String>{
 
 
 #[post("/search_ets", format="application/json", data="<input>")]
-fn search_ets(token : Token,input : Json<SearchStruct>) -> content::Json<String>{
+fn search_ets(input : Json<SearchStruct>) -> content::Json<String>{
     let mut contrats : String = "".to_string();
-    let mut tags : String = "".to_string();
-    let mut query : String = "".to_string();
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
+    let tags : String;
+    let mut internship : String = "".to_string();
+    let mut resulting =false;
+    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
-    if input.contrats.len() >0 && input.tags.len() >0 {
-        let first = true;
-       /* for elem in input.contrats{
-            
-        }*/
-
+    let mut result = conn.query("SELECT DISTINCT id_internship from internship", &[]);
+    if input.tags.len() >0 {
+        let mut in_tags = "".to_string();
         for elem in input.tags.iter(){
-            tags = tags + elem + "','"
+            in_tags = in_tags + &format!("'{}',",elem.to_string());
         }
-        tags.pop();
-        tags.pop();
-        tags.pop();
+        in_tags.pop();
+            result = conn.query(&format!("SELECT DISTINCT id_internship from tag 
+                    INNER JOIN has_tag on (tag.id_tag = has_tag.id_tag)
+                    WHERE tag.name in ({})", in_tags), &[]);
+    }
+            
+    for row in result.unwrap().iter(){
+        resulting = true;
+        let tmp : i32 = row.get(0);
+        internship = internship + &format!("{},", tmp);
+    }
+        if resulting{
+            internship.pop();
 
-        let result = conn.query(&format!("SELECT Distinct company.id_company, company.name, company.latitude, company.longitude  FROM company 
+            if input.contrats.len() > 0 {
+                for elem in input.contrats.iter(){
+                    contrats = contrats + &format!("'{}',", elem)
+                }
+                contrats.pop();
+                for row in conn.query(&format!("SELECT Distinct company.id_company, company.name, company.longitude, company.latitude  FROM company 
                 INNER JOIN has_been_made_in on (company.id_company = has_been_made_in.id_company) 
                 INNER JOIN internship on (internship.id_internship = has_been_made_in.id_internship) 
-                INNER JOIN has_tag on (internship.id_internship = has_tag.id_internship)
-                INNER JOIN tag on (tag.id_tag = has_tag.id_tag)
-                 WHERE tag.name in ('{}')", tags),&[]);
-        for row in result.unwrap().iter(){
-            let enterprise = EnterpriseInit {
-            id: row.get(0),
-            name: row.get(1),
-            longitude : row.get(2),
-            latitude : row.get(3)
-        };
-        list.push_back(enterprise);
-        }
-        content::Json(json!({"points" : list}).to_string())
-    }else{
+                WHERE internship.id_internship in ({})
+                AND internship.type_of_contrat in ({})", internship, contrats),&[]).unwrap().iter(){
+                    let enterprise = EnterpriseInit {
+                    id: row.get(0),
+                    name: row.get(1),
+                    longitude : row.get(2),
+                    latitude : row.get(3)
+                };
+                list.push_back(enterprise);
+                }
+            } else {
 
-        content::Json(json!({"points" :list}).to_string())
-    }
-    }
+                for row in conn.query(&format!("SELECT Distinct company.id_company, company.name, company.latitude, company.longitude  FROM company 
+                INNER JOIN has_been_made_in on (company.id_company = has_been_made_in.id_company) 
+                INNER JOIN internship on (internship.id_internship = has_been_made_in.id_internship) 
+                WHERE internship.id in ('{}')", internship),&[]).unwrap().iter(){
+                    let enterprise = EnterpriseInit {
+                    id: row.get(0),
+                    name: row.get(1),
+                    longitude : row.get(2),
+                    latitude : row.get(3)
+                };
+                list.push_back(enterprise);
+                }
+            }
+            content::Json(json!({"points" : list}).to_string())
+        }else {
+            content::Json(json!({"points" : list}).to_string())
+        }
+}
 
 fn main() {
     let default = rocket_cors::Cors::default();
