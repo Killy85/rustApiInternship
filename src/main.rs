@@ -504,5 +504,5 @@ fn search_ets(token : Token,input : Json<SearchStruct>) -> content::Json<String>
 
 fn main() {
     let default = rocket_cors::Cors::default();
-    rocket::ignite().attach(default).mount("/", routes![hello, signin, authenticate,init, init_post, tags, tags_autocomplete, create_company, /*create_internship,*/ contract,search_ets,refresh_token]).launch();
+    rocket::ignite().attach(default).mount("/", routes![hello, signin, authenticate,init, init_post, tags, tags_autocomplete, create_company, create_internship, contract,search_ets,refresh_token]).launch();
 } 
