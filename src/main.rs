@@ -53,6 +53,13 @@ struct SearchStruct {
 }
 
 #[derive(Serialize, Deserialize)]
+struct SearchStructIntern {
+    company: i32,
+    tags: LinkedList<String>,
+    contrats: LinkedList<i32>
+}
+
+#[derive(Serialize, Deserialize)]
 struct Contract {
     id_contract: i32,
     name: String
@@ -435,6 +442,76 @@ fn init_post(token : Token, input : Json<Position>) -> content::Json<String>{
 }
 
 
+#[post("/search_internships", format="application/json", data="<input>")]
+fn search_internships(token : Token,input : Json<SearchStructIntern>) -> content::Json<String>{
+    let mut contrats : String = "".to_string();
+    let tags : String;
+    let mut internship : String = "".to_string();
+    let mut resulting =false;
+    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
+    let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
+    let mut result = conn.query("SELECT DISTINCT id_internship from internship", &[]);
+    if input.tags.len() >0 {
+        let mut in_tags = "".to_string();
+        for elem in input.tags.iter(){
+            in_tags = in_tags + &format!("'{}',",elem.to_string());
+        }
+        in_tags.pop();
+            result = conn.query(&format!("SELECT DISTINCT id_internship from tag 
+                    INNER JOIN has_tag on (tag.id_tag = has_tag.id_tag)
+                    WHERE tag.name in ({})", in_tags), &[]);
+    }
+            
+    for row in result.unwrap().iter(){
+        resulting = true;
+        let tmp : i32 = row.get(0);
+        internship = internship + &format!("{},", tmp);
+    }
+        if resulting{
+            internship.pop();
+
+            if input.contrats.len() > 0 {
+                for elem in input.contrats.iter(){
+                    contrats = contrats + &format!("'{}',", elem)
+                }
+                contrats.pop();
+                for row in conn.query(&format!("SELECT Distinct internship.id_internship, internship.name,users.name, users.firstname,internship.start_date, internship.end_date,internship.degree, contrat.name FROM company 
+                INNER JOIN has_been_made_in on (company.id_company = has_been_made_in.id_company) 
+                INNER JOIN internship on (internship.id_internship = has_been_made_in.id_internship)
+                INNER JOIN users on (users.id_user = internship.id_user)
+                INNER JOIN contrat on (internship.type_of_contrat=contrat.id_contrat)
+                WHERE internship.id_internship in ({})
+                AND internship.type_of_contrat in ({})
+                AND company.id_company = {}", internship, contrats, input.company),&[]).unwrap().iter(){
+                    let enterprise = EnterpriseInit {
+                    id: row.get(0),
+                    name: row.get(1),
+                    longitude : row.get(2),
+                    latitude : row.get(3)
+                };
+                list.push_back(enterprise);
+                }
+            } else {
+
+                for row in conn.query(&format!("SELECT Distinct company.id_company, company.name, company.latitude, company.longitude  FROM company 
+                INNER JOIN has_been_made_in on (company.id_company = has_been_made_in.id_company) 
+                INNER JOIN internship on (internship.id_internship = has_been_made_in.id_internship) 
+                WHERE internship.id in ('{}')", internship),&[]).unwrap().iter(){
+                    let enterprise = EnterpriseInit {
+                    id: row.get(0),
+                    name: row.get(1),
+                    longitude : row.get(2),
+                    latitude : row.get(3)
+                };
+                list.push_back(enterprise);
+                }
+            }
+            content::Json(json!({"points" : list}).to_string())
+        }else {
+            content::Json(json!({"points" : list}).to_string())
+        }
+}
+
 #[post("/search_ets", format="application/json", data="<input>")]
 fn search_ets(token : Token,input : Json<SearchStruct>) -> content::Json<String>{
     let mut contrats : String = "".to_string();
@@ -502,7 +579,8 @@ fn search_ets(token : Token,input : Json<SearchStruct>) -> content::Json<String>
         }
 }
 
+
 fn main() {
     let default = rocket_cors::Cors::default();
-    rocket::ignite().attach(default).mount("/", routes![hello, signin, authenticate,init, init_post, tags, tags_autocomplete, create_company, create_internship, contract,search_ets,refresh_token]).launch();
+    rocket::ignite().attach(default).mount("/", routes![hello, signin, authenticate,init, init_post, tags, tags_autocomplete, create_company, create_internship, contract,search_ets,refresh_token, search_internships]).launch();
 } 
