@@ -486,7 +486,7 @@ fn search_ets(token : Token,input : Json<SearchStruct>) -> content::Json<String>
                 for row in conn.query(&format!("SELECT Distinct company.id_company, company.name, company.latitude, company.longitude  FROM company 
                 INNER JOIN has_been_made_in on (company.id_company = has_been_made_in.id_company) 
                 INNER JOIN internship on (internship.id_internship = has_been_made_in.id_internship) 
-                WHERE internship.id_internship in ('{}')", internship),&[]).unwrap().iter(){
+                WHERE internship.id_internship in ({})", internship),&[]).unwrap().iter(){
                     let enterprise = EnterpriseInit {
                     id: row.get(0),
                     name: row.get(1),
