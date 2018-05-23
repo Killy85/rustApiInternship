@@ -92,6 +92,22 @@ struct CreateInternship {
 }
 
 #[derive(Serialize, Deserialize)]
+struct InternshipDisplay {
+    id_internship : i32,
+    internship_name : i32,
+    start_date : chrono::NaiveDate,
+    end_date : chrono::NaiveDate, 
+    degree : String, 
+    description : String, 
+    pros: String, 
+    cons: String,
+    contrat_name : String, 
+    users_name: String, 
+    users_firstname: String, 
+    users_mail: String
+}
+
+#[derive(Serialize, Deserialize)]
 struct ConnectionApp {
     mail: String,
     pswd: String
@@ -127,6 +143,22 @@ struct EnterpriseInit {
     longitude: f32,
     latitude: f32
 }
+
+#[derive(Serialize, Deserialize)]
+struct EnterpriseDisplay {
+    id: i32,
+    name: String,
+    adress: String,
+    longitude: f32,
+    latitude: f32,
+    mail_hr: String,
+    website_company: String,
+    country : String,
+    city: String,
+    zip_code: i32,
+    internship :LinkedList<InternshipDisplay>
+}
+
 
 #[derive(Serialize, Deserialize)]
 struct Position{
@@ -579,8 +611,68 @@ fn search_ets(token : Token,input : Json<SearchStruct>) -> content::Json<String>
         }
 }
 
+#[get("/ets/<id>")]
+fn company_display(/*token : Token,*/ id : i32)-> content::Json<String>{
+    print!("Bonjour");
+    let mut ets : LinkedList<EnterpriseDisplay> = LinkedList::new();
+    let query = &format!("SELECT * FROM company WHERE id_company = {}",id);
+    print!("{}", query);
+    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
+    let result = conn.query(query, &[]).unwrap().len();
+    print!(">>>>>>>>>>>>>>>>>>>>>>>{}<<<<<<<<<<<<<<<<<<<<<<<<",result );
+    if(result > 0){
+        for row in &conn.query(query, &[]).unwrap(){
+        let mut list: LinkedList<InternshipDisplay> = LinkedList::new();
+            for row_inter in &conn.query("SELECT id_internship, internship.name, start_date, end_date, 
+                                degree, description, pros, cons,contrat.name, users.name, 
+                                users.firstname, users.mail
+                                FROM internship
+                                INNER JOIN contrat on (type_of_contrat = id_contrat)
+                                INNER JOIN users on (internship.id_user = users.id_user)
+                                NATURAL JOIN has_been_made_in
+                                WHERE id_company = $1 ", &[&id.to_string()]).unwrap(){
+                                    let internship = InternshipDisplay{
+                                        id_internship : row_inter.get(0),
+                                        internship_name : row_inter.get(1),
+                                        start_date : row_inter.get(2),
+                                        end_date : row_inter.get(3), 
+                                        degree : row_inter.get(4), 
+                                        description : row_inter.get(5), 
+                                        pros: row_inter.get(6), 
+                                        cons: row_inter.get(7),
+                                        contrat_name : row_inter.get(8), 
+                                        users_name: row_inter.get(9), 
+                                        users_firstname: row_inter.get(10), 
+                                        users_mail: row_inter.get(11)
+                                    };
+                                    list.push_back(internship);
+                                }    
+                let ets_itm = EnterpriseDisplay{
+                    id: row.get(0),
+                    name: row.get(1),
+                    adress: row.get(2),
+                    longitude: row.get(3),
+                    latitude: row.get(4),
+                    mail_hr: row.get(5),
+                    website_company: row.get(6),
+                    country : row.get(7),
+                    city: row.get(8),
+                    zip_code: row.get(9),
+                    internship :list
+                    };
+                    ets.push_back(ets_itm)
+                
+            } let mut iter = ets.iter();
+            content::Json(json!({"Company" : iter.next()}).to_string())
+    }else {
+            content::Json(json!({"Company" : format!("No Company with id {}",id)}).to_string())
+    }
+    
+    
+    
+}
 
 fn main() {
     let default = rocket_cors::Cors::default();
-    rocket::ignite().attach(default).mount("/", routes![hello, signin, authenticate,init, init_post, tags, tags_autocomplete, create_company, create_internship, contract,search_ets,refresh_token, search_internships]).launch();
+    rocket::ignite().attach(default).mount("/", routes![hello, signin, authenticate,init, init_post, tags, tags_autocomplete, create_company, create_internship, contract,search_ets,refresh_token, search_internships,company_display]).launch();
 } 
