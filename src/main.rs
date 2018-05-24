@@ -15,8 +15,7 @@ use postgres::{Connection, TlsMode};
 use rocket::response::content;
 use rocket_contrib::{Json};
 use std::collections::LinkedList;
-use chrono::prelude::*;
-use chrono::{Duration, Utc,NaiveDate, NaiveDateTime};
+use chrono::{Utc, NaiveDate};
 use rocket::request::{Request,FromRequest};
 use rocket::request;
 use rocket::Outcome;
@@ -227,13 +226,13 @@ fn refresh_token(input: Json<ConnectionApp>) -> content::Json<String> {
              value : token_value.get(0),
              date : token_value.get(1)
          };
-            let result = conn.query("UPDATE token set date = $1 where value = $2", &[&dt.to_string(), &token.value]);
+            let _result = conn.query("UPDATE token set date = $1 where value = $2", &[&dt.to_string(), &token.value]);
                 content::Json(json!({"status" : 200, "user_token" : token.value}).to_string())
         }else { 
             let result = conn.query("Select id_user from users where mail = $1", &[&input.mail]);
             let id : i32 = result.unwrap().get(0).get(0);
             let token_str = yyid_string();
-            let result = conn.query("INSERT into token (value, date, id_user) VALUES ($1,$2,$3)",&[&token_str,&Utc::now().to_string(),&id]);
+            let _result = conn.query("INSERT into token (value, date, id_user) VALUES ($1,$2,$3)",&[&token_str,&Utc::now().to_string(),&id]);
             content::Json(json!({"status" : 200, "message" : "Token Created", "token" : token_str}).to_string())
         }
 }
@@ -251,11 +250,15 @@ fn signin(input: Json<User>) -> content::Json<String> {
     "#,
     &[&input.name, &input.firstname,&input.mail,&"student",&input.pswd]);
      if result.is_ok() {
-            let result = conn.query("Select id_user from users where mail = $1", &[&input.mail]);
-            let id : i32 = result.unwrap().get(0).get(0);
+            let result = conn.query("Select id_user, firstname, name from users where mail = $1", &[&input.mail]);
+            let user = result.unwrap();
+            let id : i32 = user.get(0).get(0);
+            let firstname : String = user.get(0).get(1);
+            let name : String = user.get(0).get(2);
             let token_str = yyid_string();
-            let result = conn.query("INSERT into token (value, date, id_user) VALUES ($1,$2,$3)",&[&token_str,&Utc::now().to_string(),&id]);
-            content::Json(json!({"status" : 200, "message" : "User created", "token" : token_str}).to_string())
+
+            let _result = conn.query("INSERT into token (value, date, id_user) VALUES ($1,$2,$3)",&[&token_str,&Utc::now().to_string(),&id]);
+            content::Json(json!({"status" : 200, "message" : "User created", "token" : token_str, "id" : id, "firstname" : firstname, "name" : name}).to_string())
     }else{
             content::Json(json!({"status" : 404,"message" : "An error occured while creating the user"}).to_string())
     }
@@ -316,7 +319,7 @@ fn create_company(input: Json<Company>) -> content::Json<String> {
 }
 
 #[post("/create_internship",format = "application/json", data = "<input>")]
-fn create_internship(token :Token,input: Json<CreateInternship>) -> content::Json<String> {
+fn create_internship(_token :Token,input: Json<CreateInternship>) -> content::Json<String> {
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
                                TlsMode::None).unwrap();
     
@@ -352,7 +355,7 @@ fn test_db() -> &'static str {
 }       
 
 #[get("/init")]
-fn init(token : Token) -> content::Json<String>{
+fn init(_token : Token) -> content::Json<String>{
     
     let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
@@ -370,7 +373,7 @@ fn init(token : Token) -> content::Json<String>{
 }
 
 #[get("/tags")]
-fn tags(token :Token ) -> content::Json<String>{
+fn tags(_token :Token ) -> content::Json<String>{
     
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<Tagsinit> = LinkedList::new(); 
@@ -386,7 +389,7 @@ fn tags(token :Token ) -> content::Json<String>{
 }
 
 #[get("/tags_autocomplete/<str>")]
-fn tags_autocomplete(token : Token,str : String) -> content::Json<String>{
+fn tags_autocomplete(_token : Token,str : String) -> content::Json<String>{
 
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<TagsComplete> = LinkedList::new(); 
@@ -448,7 +451,7 @@ fn date_converter(date: String) -> chrono::NaiveDate {
 
 
 #[post("/init", format="application/json", data="<input>")]
-fn init_post(token : Token, input : Json<Position>) -> content::Json<String>{
+fn init_post(_token : Token, input : Json<Position>) -> content::Json<String>{
     
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
@@ -475,9 +478,9 @@ fn init_post(token : Token, input : Json<Position>) -> content::Json<String>{
 
 
 #[post("/search_internships", format="application/json", data="<input>")]
-fn search_internships(token : Token,input : Json<SearchStructIntern>) -> content::Json<String>{
+fn search_internships(_token : Token,input : Json<SearchStructIntern>) -> content::Json<String>{
     let mut contrats : String = "".to_string();
-    let tags : String;
+    let _tags : String;
     let mut internship : String = "".to_string();
     let mut resulting =false;
     let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
@@ -545,9 +548,9 @@ fn search_internships(token : Token,input : Json<SearchStructIntern>) -> content
 }
 
 #[post("/search_ets", format="application/json", data="<input>")]
-fn search_ets(token : Token,input : Json<SearchStruct>) -> content::Json<String>{
+fn search_ets(_token : Token,input : Json<SearchStruct>) -> content::Json<String>{
     let mut contrats : String = "".to_string();
-    let tags : String;
+    let _tags : String;
     let mut internship : String = "".to_string();
     let mut resulting =false;
     let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
@@ -619,9 +622,9 @@ fn company_display(/*token : Token,*/ id : i32)-> content::Json<String>{
     print!("{}", query);
     let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
     let result = conn.query(query, &[]).unwrap().len();
-    if(result > 0){
+    if result > 0 {
         for row in &conn.query(query, &[]).unwrap(){
-            let id_c : i32 = row.get(0);
+            let _id_c : i32 = row.get(0);
         let mut list: LinkedList<InternshipDisplay> = LinkedList::new();
             for row_inter in &conn.query("SELECT id_internship, internship.name, start_date, end_date, 
                                 degree, description, pros, cons,contrat.name, users.name, 
