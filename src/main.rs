@@ -48,7 +48,8 @@ struct Token(String);
 #[derive(Serialize, Deserialize)]
 struct SearchStruct {
     tags: LinkedList<String>,
-    contrats: LinkedList<i32>
+    contrats: LinkedList<i32>,
+    pos : Position
 }
 
 #[derive(Serialize, Deserialize)]
@@ -61,6 +62,11 @@ struct SearchStructIntern {
 #[derive(Serialize, Deserialize)]
 struct Contract {
     id_contract: i32,
+    name: String
+}
+#[derive(Serialize, Deserialize)]
+struct CompanyList {
+    id_company: i32,
     name: String
 }
 
@@ -87,7 +93,9 @@ struct CreateInternship {
     description: String,
     type_of_contrat : i32,
     pros: String,
-    cons: String
+    cons: String,
+    id_company: i32,
+    tags: LinkedList<i32>
 }
 
 #[derive(Serialize, Deserialize)]
@@ -116,10 +124,6 @@ struct ConnectionApp {
 struct Connected {
     name: String,
     firstname: String
-}
-
-struct Internship {
-    id: i32
 }
 
 #[derive(Serialize, Deserialize)]
@@ -168,7 +172,7 @@ struct Position{
 
 fn is_valid(key: &str) -> bool {
     let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",
-                               TlsMode::None).unwrap();
+            TlsMode::None).unwrap();
     let result = conn.query(&format!("SELECT date from token where value='{}'", key), &[]);
     let mut count = 0;
     for _ in result.unwrap().iter(){
@@ -211,7 +215,7 @@ fn hello() -> &'static str {
 #[post("/refresh_token",format = "application/json", data = "<input>")]
 fn refresh_token(input: Json<ConnectionApp>) -> content::Json<String> {
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
-                               TlsMode::None).unwrap();
+            TlsMode::None).unwrap();
     let dt = Utc::now();
     let result = conn.query(
     r#"
@@ -220,12 +224,12 @@ fn refresh_token(input: Json<ConnectionApp>) -> content::Json<String> {
         AND password = $2
     "#,
     &[&input.mail, &input.pswd]).unwrap();
-     if result.len() == 1 {
-         let token_value = result.get(0);
-         let token = TokenReturn{
-             value : token_value.get(0),
-             date : token_value.get(1)
-         };
+    if result.len() == 1 {
+        let token_value = result.get(0);
+        let token = TokenReturn{
+            value : token_value.get(0),
+            date : token_value.get(1)
+        };
             let _result = conn.query("UPDATE token set date = $1 where value = $2", &[&dt.to_string(), &token.value]);
                 content::Json(json!({"status" : 200, "user_token" : token.value}).to_string())
         }else { 
@@ -241,7 +245,7 @@ fn refresh_token(input: Json<ConnectionApp>) -> content::Json<String> {
 #[post("/signin",format = "application/json", data = "<input>")]
 fn signin(input: Json<User>) -> content::Json<String> {
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
-                               TlsMode::None).unwrap();
+            TlsMode::None).unwrap();
 
     let result = conn.query(
     r#"
@@ -249,16 +253,20 @@ fn signin(input: Json<User>) -> content::Json<String> {
         VALUES ($1,$2,$3,$4,$5)
     "#,
     &[&input.name, &input.firstname,&input.mail,&"student",&input.pswd]);
-     if result.is_ok() {
+    if result.is_ok() {
             let result = conn.query("Select id_user, firstname, name from users where mail = $1", &[&input.mail]);
             let user = result.unwrap();
             let id : i32 = user.get(0).get(0);
-            let firstname : String = user.get(0).get(1);
-            let name : String = user.get(0).get(2);
+            let _firstname : String = user.get(0).get(1);
+            let _name : String = user.get(0).get(2);
             let token_str = yyid_string();
 
             let _result = conn.query("INSERT into token (value, date, id_user) VALUES ($1,$2,$3)",&[&token_str,&Utc::now().to_string(),&id]);
-            content::Json(json!({"status" : 200, "message" : "User created", "token" : token_str, "id" : id, "firstname" : firstname, "name" : name}).to_string())
+            let user_con = Connected{
+                name: user.get(0).get(2),
+                firstname: user.get(0).get(1),
+            };
+            content::Json(json!({"status" : 200, "message" : "User created", "token" : token_str, "user" : user_con}).to_string())
     }else{
             content::Json(json!({"status" : 404,"message" : "An error occured while creating the user"}).to_string())
     }
@@ -268,7 +276,7 @@ fn signin(input: Json<User>) -> content::Json<String> {
 #[post("/login",format = "application/json", data = "<input>")]
 fn authenticate(input: Json<ConnectionApp>) -> content::Json<String> {
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
-                               TlsMode::None).unwrap();
+            TlsMode::None).unwrap();
     
     let result = conn.query(
     r#"
@@ -303,7 +311,7 @@ fn authenticate(input: Json<ConnectionApp>) -> content::Json<String> {
 #[post("/create_company",format = "application/json", data = "<input>")]
 fn create_company(input: Json<Company>) -> content::Json<String> {
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
-                               TlsMode::None).unwrap();
+            TlsMode::None).unwrap();
 
     let result = conn.query(
     r#"
@@ -311,7 +319,7 @@ fn create_company(input: Json<Company>) -> content::Json<String> {
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
     "#,
     &[&input.name, &input.adress, &input.longitude, &input.latitude, &input.mail_hr, &input.website_company, &input.country, &input.city, &input.zip_code]);
-     if result.is_ok() {
+    if result.is_ok() {
             content::Json(json!({"status" : 200, "message" : "Company created"}).to_string())
     }else{
             content::Json(json!({"status" : 404,"message" : "An error occured while creating the company"}).to_string())
@@ -321,7 +329,7 @@ fn create_company(input: Json<Company>) -> content::Json<String> {
 #[post("/create_internship",format = "application/json", data = "<input>")]
 fn create_internship(_token :Token,input: Json<CreateInternship>) -> content::Json<String> {
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
-                               TlsMode::None).unwrap();
+            TlsMode::None).unwrap();
     
     let start_date = date_converter(input.start_date.clone());
     let end_date = date_converter(input.end_date.clone());
@@ -332,44 +340,26 @@ fn create_internship(_token :Token,input: Json<CreateInternship>) -> content::Js
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
     "#,
     &[&input.name, &input.id_user, &start_date, &end_date, &input.degree, &input.description, &input.type_of_contrat, &input.pros, &input.cons]);
-     if result.is_ok() {
-            content::Json(json!({"status" : 200, "message" : "Internship created"}).to_string())
+    if result.is_ok() {
+            let result = conn.query(r#"SELECT id_internship from internship WHERE name = $1 and id_user=$2"#,&[&input.name, &input.id_user]);
+            let id_internship : i32 = result.unwrap().get(0).get(0);
+            let comp_query = conn.query("INSERT INTO has_been_made_in (id_company,id_intership) VALUES ($1,$2)", &[&input.id_company,&id_internship]);
+            if comp_query.is_ok() {
+                for tag in &input.tags{
+                    let _tags_res = conn.query("INSERT INTO has_tags (id_internship, id_tag) VALUES ($1,$2)", &[&id_internship,&tag]);
+                }
+                content::Json(json!({"status" : 200, "message" : "Internship created"}).to_string())
+            }
+            else {
+                println!("{}",comp_query.unwrap_err());
+                content::Json(json!({"status" : 404,"message" : "An error occured while creating the internship"}).to_string())
+            }
+            
     }else{
             println!("{}",result.unwrap_err());
             content::Json(json!({"status" : 404,"message" : "An error occured while creating the internship"}).to_string())
     }
 
-}
-
-#[get("/test-db")]
-fn test_db() -> &'static str {
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
-                               TlsMode::None).unwrap();
-    for row in &conn.query("SELECT id_internship FROM internship", &[]).unwrap() {
-        let person = Internship {
-            id: row.get(0)
-        };
-        println!("Found person {}",person.id);
-    }
-    "oui"
-}       
-
-#[get("/init")]
-fn init(_token : Token) -> content::Json<String>{
-    
-    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
-    let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
-
-    for row in &conn.query("SELECT id_company, name, longitude, latitude FROM company", &[]).unwrap() {
-        let enterprise = EnterpriseInit {
-            id: row.get(0),
-            name: row.get(1),
-            longitude : row.get(2),
-            latitude : row.get(3)
-        };
-        list.push_back(enterprise);
-    }   
-    content::Json(json!({"points" : list}).to_string())
 }
 
 #[get("/tags")]
@@ -388,25 +378,8 @@ fn tags(_token :Token ) -> content::Json<String>{
     content::Json(json!({"tags" : list}).to_string())
 }
 
-#[get("/tags_autocomplete/<str>")]
-fn tags_autocomplete(_token : Token,str : String) -> content::Json<String>{
-
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
-    let mut list: LinkedList<TagsComplete> = LinkedList::new(); 
-	
-    for row in &conn.query(&format!("SELECT id_tag, name FROM tag WHERE name LIKE '%{}%' ",str ),&[]).unwrap() 
-	{
-        let tags = TagsComplete {
-            id_tag: row.get(0),
-            name: row.get(1)        
-        };
-        list.push_back(tags);
-    }   
-    content::Json(json!({"tags" : list}).to_string())
-}
-
 #[get("/contract")]
-fn contract() -> content::Json<String>{
+fn contract(_token: Token) -> content::Json<String>{
     
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<Contract> = LinkedList::new(); 
@@ -420,6 +393,23 @@ fn contract() -> content::Json<String>{
     }   
     content::Json(json!({"contract" : list}).to_string())
 }
+
+#[get("/company")]
+fn company(_token : Token) -> content::Json<String>{
+    
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
+    let mut list: LinkedList<CompanyList> = LinkedList::new(); 
+
+    for row in &conn.query("SELECT id_company, name FROM company", &[]).unwrap() {
+        let company = CompanyList {
+            id_company: row.get(0),
+            name: row.get(1)        
+        };
+        list.push_back(company);
+    }   
+    content::Json(json!({"company" : list}).to_string())
+}
+
 
 fn scale_float_add(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
     if is_lat{
@@ -449,34 +439,6 @@ fn date_converter(date: String) -> chrono::NaiveDate {
         return date_fmt;
 }
 
-
-#[post("/init", format="application/json", data="<input>")]
-fn init_post(_token : Token, input : Json<Position>) -> content::Json<String>{
-    
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
-    let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
-
-    for row in &conn.query("SELECT id_company, name, longitude, latitude 
-                FROM company WHERE (latitude > $1 AND latitude < $2) 
-                AND (longitude > $3 AND longitude < $4)",
-          &[&scale_float_sup(input.center_lat, input.zoom_level, true),
-          &scale_float_add(input.center_lat, input.zoom_level, true),
-          &scale_float_sup(input.center_long, input.zoom_level, false),
-          &scale_float_add(input.center_long, input.zoom_level, false)
-          ])
-          .unwrap() {
-        let enterprise = EnterpriseInit {
-            id: row.get(0),
-            name: row.get(1),
-            longitude : row.get(2),
-            latitude : row.get(3)
-        };
-        list.push_back(enterprise);
-    }   
-    content::Json(json!({"points" : list}).to_string())
-}
-
-
 #[post("/search_internships", format="application/json", data="<input>")]
 fn search_internships(_token : Token,input : Json<SearchStructIntern>) -> content::Json<String>{
     let mut contrats : String = "".to_string();
@@ -484,7 +446,7 @@ fn search_internships(_token : Token,input : Json<SearchStructIntern>) -> conten
     let mut internship : String = "".to_string();
     let mut resulting =false;
     let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
-    let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
+    let mut list: LinkedList<InternshipDisplay> = LinkedList::new(); 
     let mut result = conn.query("SELECT DISTINCT id_internship from internship", &[]);
     if input.tags.len() >0 {
         let mut in_tags = "".to_string();
@@ -510,7 +472,8 @@ fn search_internships(_token : Token,input : Json<SearchStructIntern>) -> conten
                     contrats = contrats + &format!("'{}',", elem)
                 }
                 contrats.pop();
-                for row in conn.query(&format!("SELECT Distinct internship.id_internship, internship.name,users.name, users.firstname,internship.start_date, internship.end_date,internship.degree, contrat.name FROM company 
+                for row in conn.query(&format!("SELECT Distinct internship.id_internship, internship.name,users.name, users.firstname, users.mail,internship.start_date,
+                internship.end_date,internship.degree,internship.description,internship.pros, internship.cons, contrat.name FROM company 
                 INNER JOIN has_been_made_in on (company.id_company = has_been_made_in.id_company) 
                 INNER JOIN internship on (internship.id_internship = has_been_made_in.id_internship)
                 INNER JOIN users on (users.id_user = internship.id_user)
@@ -518,32 +481,49 @@ fn search_internships(_token : Token,input : Json<SearchStructIntern>) -> conten
                 WHERE internship.id_internship in ({})
                 AND internship.type_of_contrat in ({})
                 AND company.id_company = {}", internship, contrats, input.company),&[]).unwrap().iter(){
-                    let enterprise = EnterpriseInit {
-                    id: row.get(0),
-                    name: row.get(1),
-                    longitude : row.get(2),
-                    latitude : row.get(3)
+                    let internship = InternshipDisplay {
+                    id_internship : row.get(0),
+                    internship_name : row.get(1),
+                    users_name: row.get(2), 
+                    users_firstname: row.get(3), 
+                    users_mail: row.get(4),
+                    start_date : row.get(5),
+                    end_date : row.get(6), 
+                    degree : row.get(7), 
+                    description : row.get(8), 
+                    pros: row.get(9), 
+                    cons: row.get(10),
+                    contrat_name : row.get(11),
                 };
-                list.push_back(enterprise);
+                list.push_back(internship);
                 }
             } else {
 
-                for row in conn.query(&format!("SELECT Distinct company.id_company, company.name, company.latitude, company.longitude  FROM company 
+                for row in conn.query(&format!("SELECT Distinct internship.id_internship, internship.name,users.name, users.firstname, users.mail,internship.start_date,
+                internship.end_date,internship.degree,internship.description,internship.pros, internship.cons, contrat.name FROM company 
                 INNER JOIN has_been_made_in on (company.id_company = has_been_made_in.id_company) 
                 INNER JOIN internship on (internship.id_internship = has_been_made_in.id_internship) 
                 WHERE internship.id in ('{}')", internship),&[]).unwrap().iter(){
-                    let enterprise = EnterpriseInit {
-                    id: row.get(0),
-                    name: row.get(1),
-                    longitude : row.get(2),
-                    latitude : row.get(3)
+                    let internship = InternshipDisplay {
+                    id_internship : row.get(0),
+                    internship_name : row.get(1),
+                    users_name: row.get(2), 
+                    users_firstname: row.get(3), 
+                    users_mail: row.get(4),
+                    start_date : row.get(5),
+                    end_date : row.get(6), 
+                    degree : row.get(7), 
+                    description : row.get(8), 
+                    pros: row.get(9), 
+                    cons: row.get(10),
+                    contrat_name : row.get(11),
                 };
-                list.push_back(enterprise);
+                list.push_back(internship);
                 }
             }
-            content::Json(json!({"points" : list}).to_string())
+            content::Json(json!({"Internship" : list}).to_string())
         }else {
-            content::Json(json!({"points" : list}).to_string())
+            content::Json(json!({"Internship" : list}).to_string())
         }
 }
 
@@ -584,7 +564,14 @@ fn search_ets(_token : Token,input : Json<SearchStruct>) -> content::Json<String
                 INNER JOIN has_been_made_in on (company.id_company = has_been_made_in.id_company) 
                 INNER JOIN internship on (internship.id_internship = has_been_made_in.id_internship) 
                 WHERE internship.id_internship in ({})
-                AND internship.type_of_contrat in ({})", internship, contrats),&[]).unwrap().iter(){
+                AND internship.type_of_contrat in ({})
+                AND (latitude > $1 AND latitude < $2) 
+                AND (longitude > $3 AND longitude < $4)", internship, contrats), 
+                &[&scale_float_sup(input.pos.center_lat, input.pos.zoom_level, true),
+                &scale_float_add(input.pos.center_lat, input.pos.zoom_level, true),
+                &scale_float_sup(input.pos.center_long, input.pos.zoom_level, false),
+                &scale_float_add(input.pos.center_long, input.pos.zoom_level, false)
+                ]).unwrap().iter(){
                     let enterprise = EnterpriseInit {
                     id: row.get(0),
                     name: row.get(1),
@@ -598,7 +585,14 @@ fn search_ets(_token : Token,input : Json<SearchStruct>) -> content::Json<String
                 for row in conn.query(&format!("SELECT Distinct company.id_company, company.name, company.latitude, company.longitude  FROM company 
                 INNER JOIN has_been_made_in on (company.id_company = has_been_made_in.id_company) 
                 INNER JOIN internship on (internship.id_internship = has_been_made_in.id_internship) 
-                WHERE internship.id_internship in ({})", internship),&[]).unwrap().iter(){
+                WHERE internship.id_internship in ({})
+                AND (latitude > $1 AND latitude < $2) 
+                AND (longitude > $3 AND longitude < $4)", internship),
+                &[&scale_float_sup(input.pos.center_lat, input.pos.zoom_level, true),
+                &scale_float_add(input.pos.center_lat, input.pos.zoom_level, true),
+                &scale_float_sup(input.pos.center_long, input.pos.zoom_level, false),
+                &scale_float_add(input.pos.center_long, input.pos.zoom_level, false)
+                ]).unwrap().iter(){
                     let enterprise = EnterpriseInit {
                     id: row.get(0),
                     name: row.get(1),
@@ -615,7 +609,7 @@ fn search_ets(_token : Token,input : Json<SearchStruct>) -> content::Json<String
 }
 
 #[get("/ets/<id>")]
-fn company_display(/*token : Token,*/ id : i32)-> content::Json<String>{
+fn company_display(_token : Token, id : i32)-> content::Json<String>{
     print!("Bonjour");
     let mut ets : LinkedList<EnterpriseDisplay> = LinkedList::new();
     let query = &format!("SELECT * FROM company WHERE id_company = {}", id);
@@ -675,7 +669,18 @@ fn company_display(/*token : Token,*/ id : i32)-> content::Json<String>{
 
 fn main() {
     let default = rocket_cors::Cors::default();
-    rocket::ignite().attach(default).mount("/", routes![hello, signin, authenticate,init, 
-    init_post, tags, tags_autocomplete, create_company, create_internship, contract,
-    search_ets,refresh_token, search_internships,company_display]).launch();
+    rocket::ignite()
+    .attach(default)
+    .mount("/", routes![hello,
+                        signin, 
+                        authenticate,
+                        tags,
+                        create_company, 
+                        create_internship, 
+                        contract,
+                        search_ets,
+                        refresh_token, 
+                        search_internships,
+                        company_display])
+    .launch();
 } 
