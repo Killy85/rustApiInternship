@@ -546,7 +546,7 @@ fn search_ets(_token : Token,input : Json<SearchStruct>) -> content::Json<String
                     content::Json(json!({"points" : list}).to_string())
                 } else {
                     for row in conn.query("SELECT Distinct company.id_company, company.name, company.longitude, company.latitude  FROM company 
-                        AND (latitude > $1 AND latitude < $2) 
+                        WHERE (latitude > $1 AND latitude < $2) 
                         AND (longitude > $3 AND longitude < $4)",
                         &[&scale_float_sup(input.pos.center_lat, input.pos.zoom_level, true),
                         &scale_float_add(input.pos.center_lat, input.pos.zoom_level, true),
