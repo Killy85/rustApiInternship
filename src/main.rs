@@ -531,6 +531,40 @@ fn search_ets(_token : Token,input : Json<SearchStruct>) -> content::Json<String
     let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
     let mut result = conn.query("SELECT DISTINCT id_internship from internship", &[]);
+    if input.tags.len() <= 0 && input.contrats.len() <= 0 {
+            if input.pos.zoom_level == -1 {
+                    for row in conn.query("SELECT Distinct company.id_company, company.name, company.longitude, company.latitude  FROM company ",
+                        &[]).unwrap().iter(){
+                        let enterprise = EnterpriseInit {
+                        id: row.get(0),
+                        name: row.get(1),
+                        longitude : row.get(2),
+                        latitude : row.get(3)
+                    };
+                    list.push_back(enterprise);
+                    }
+                    content::Json(json!({"points" : list}).to_string())
+                } else {
+                    for row in conn.query("SELECT Distinct company.id_company, company.name, company.longitude, company.latitude  FROM company 
+                        AND (latitude > $1 AND latitude < $2) 
+                        AND (longitude > $3 AND longitude < $4)",
+                        &[&scale_float_sup(input.pos.center_lat, input.pos.zoom_level, true),
+                        &scale_float_add(input.pos.center_lat, input.pos.zoom_level, true),
+                        &scale_float_sup(input.pos.center_long, input.pos.zoom_level, false),
+                        &scale_float_add(input.pos.center_long, input.pos.zoom_level, false)
+                        ]).unwrap().iter(){
+                        let enterprise = EnterpriseInit {
+                        id: row.get(0),
+                        name: row.get(1),
+                        longitude : row.get(2),
+                        latitude : row.get(3)
+                    };
+                    list.push_back(enterprise);
+                    }
+                    content::Json(json!({"points" : list}).to_string())
+                }
+    
+    }else {
     if input.tags.len() >0 {
         let mut in_tags = "".to_string();
         for elem in input.tags.iter(){
@@ -596,7 +630,7 @@ fn search_ets(_token : Token,input : Json<SearchStruct>) -> content::Json<String
                 
             } else {
                 if input.pos.zoom_level == -1 {
-                    for row in conn.query(&format!("SELECT Distinct company.id_company, company.name, company.latitude, company.longitude  FROM company 
+                    for row in conn.query(&format!("SELECT Distinct company.id_company, company.name, company.longitude, company.latitude  FROM company 
                         INNER JOIN has_been_made_in on (company.id_company = has_been_made_in.id_company) 
                         INNER JOIN internship on (internship.id_internship = has_been_made_in.id_internship) 
                         WHERE internship.id_internship in ({})", internship),
@@ -610,7 +644,7 @@ fn search_ets(_token : Token,input : Json<SearchStruct>) -> content::Json<String
                     list.push_back(enterprise);
                     }
                 } else {
-                    for row in conn.query(&format!("SELECT Distinct company.id_company, company.name, company.latitude, company.longitude  FROM company 
+                    for row in conn.query(&format!("SELECT Distinct company.id_company, company.name, company.longitude, company.latitude  FROM company 
                         INNER JOIN has_been_made_in on (company.id_company = has_been_made_in.id_company) 
                         INNER JOIN internship on (internship.id_internship = has_been_made_in.id_internship) 
                         WHERE internship.id_internship in ({})
@@ -635,6 +669,7 @@ fn search_ets(_token : Token,input : Json<SearchStruct>) -> content::Json<String
         }else {
             content::Json(json!({"points" : list}).to_string())
         }
+    }
 }
 
 fn scale_float_add(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
