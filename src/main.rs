@@ -180,7 +180,7 @@ fn hello() -> &'static str {
 fn company_display(_token : Token, id : i32)-> content::Json<String>{
     let mut ets : LinkedList<EnterpriseDisplay> = LinkedList::new();
     let query = &format!("SELECT * FROM company WHERE id_company = {}", id);
-    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let result = conn.query(query, &[]).unwrap().len();
     if result > 0 {
         for row in &conn.query(query, &[]).unwrap(){
@@ -397,7 +397,7 @@ fn create_company(input: Json<Company>) -> content::Json<String> {
 
 #[post("/create_internship",format = "application/json", data = "<input>")]
 fn create_internship(token :Token,input: Json<CreateInternship>) -> content::Json<String> {
-    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
             TlsMode::None).unwrap();
     
     let start_date = date_converter(input.start_date.clone());
@@ -437,7 +437,7 @@ fn search_internships(_token : Token,input : Json<SearchStructIntern>) -> conten
     let _tags : String;
     let mut internship : String = "".to_string();
     let mut resulting =false;
-    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<InternshipDisplay> = LinkedList::new(); 
     let mut result = conn.query("SELECT DISTINCT id_internship from internship", &[]);
     if input.tags.len() >0 {
@@ -525,7 +525,7 @@ fn search_ets(_token : Token,input : Json<SearchStruct>) -> content::Json<String
     let mut internship : String = "".to_string();
     let mut resulting =false;
     println!("{}", input.pos.center_lat);
-    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
     let mut result = conn.query("SELECT DISTINCT id_internship from internship", &[]);
     if input.tags.len() <= 0 && input.contrats.len() <= 0 {
@@ -686,7 +686,7 @@ fn scale_float_sup(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
 }
 
 fn is_valid(key: &str) -> bool {
-    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",
+    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
             TlsMode::None).unwrap();
     let result = conn.query(&format!("SELECT date from token where value='{}'", key), &[]);
     let mut count = 0;
