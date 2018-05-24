@@ -94,7 +94,7 @@ struct CreateInternship {
 #[derive(Serialize, Deserialize)]
 struct InternshipDisplay {
     id_internship : i32,
-    internship_name : i32,
+    internship_name : String,
     start_date : chrono::NaiveDate,
     end_date : chrono::NaiveDate, 
     degree : String, 
@@ -615,13 +615,13 @@ fn search_ets(token : Token,input : Json<SearchStruct>) -> content::Json<String>
 fn company_display(/*token : Token,*/ id : i32)-> content::Json<String>{
     print!("Bonjour");
     let mut ets : LinkedList<EnterpriseDisplay> = LinkedList::new();
-    let query = &format!("SELECT * FROM company WHERE id_company = {}",id);
+    let query = &format!("SELECT * FROM company WHERE id_company = {}", id);
     print!("{}", query);
     let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",TlsMode::None).unwrap();
     let result = conn.query(query, &[]).unwrap().len();
-    print!(">>>>>>>>>>>>>>>>>>>>>>>{}<<<<<<<<<<<<<<<<<<<<<<<<",result );
     if(result > 0){
         for row in &conn.query(query, &[]).unwrap(){
+            let id_c : i32 = row.get(0);
         let mut list: LinkedList<InternshipDisplay> = LinkedList::new();
             for row_inter in &conn.query("SELECT id_internship, internship.name, start_date, end_date, 
                                 degree, description, pros, cons,contrat.name, users.name, 
@@ -630,7 +630,7 @@ fn company_display(/*token : Token,*/ id : i32)-> content::Json<String>{
                                 INNER JOIN contrat on (type_of_contrat = id_contrat)
                                 INNER JOIN users on (internship.id_user = users.id_user)
                                 NATURAL JOIN has_been_made_in
-                                WHERE id_company = $1 ", &[&id.to_string()]).unwrap(){
+                                WHERE id_company = $1 ", &[&id]).unwrap(){
                                     let internship = InternshipDisplay{
                                         id_internship : row_inter.get(0),
                                         internship_name : row_inter.get(1),
@@ -655,24 +655,24 @@ fn company_display(/*token : Token,*/ id : i32)-> content::Json<String>{
                     latitude: row.get(4),
                     mail_hr: row.get(5),
                     website_company: row.get(6),
-                    country : row.get(7),
-                    city: row.get(8),
+                    city: row.get(7),
+                    country: row.get(8),
                     zip_code: row.get(9),
                     internship :list
                     };
                     ets.push_back(ets_itm)
                 
-            } let mut iter = ets.iter();
+            } 
+            let mut iter = ets.iter();
             content::Json(json!({"Company" : iter.next()}).to_string())
     }else {
             content::Json(json!({"Company" : format!("No Company with id {}",id)}).to_string())
     }
-    
-    
-    
 }
 
 fn main() {
     let default = rocket_cors::Cors::default();
-    rocket::ignite().attach(default).mount("/", routes![hello, signin, authenticate,init, init_post, tags, tags_autocomplete, create_company, create_internship, contract,search_ets,refresh_token, search_internships,company_display]).launch();
+    rocket::ignite().attach(default).mount("/", routes![hello, signin, authenticate,init, 
+    init_post, tags, tags_autocomplete, create_company, create_internship, contract,
+    search_ets,refresh_token, search_internships,company_display]).launch();
 } 
