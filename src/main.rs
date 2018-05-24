@@ -255,7 +255,7 @@ fn contract(_token: Token) -> content::Json<String>{
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<Contract> = LinkedList::new(); 
 
-    for row in &conn.query("SELECT id_contract, name FROM contract", &[]).unwrap() {
+    for row in &conn.query("SELECT id_contrat, name FROM contrat", &[]).unwrap() {
         let contract = Contract {
             id_contract: row.get(0),
             name: row.get(1)        
