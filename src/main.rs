@@ -184,7 +184,6 @@ fn company_display(_token : Token, id : i32)-> content::Json<String>{
     let result = conn.query(query, &[]).unwrap().len();
     if result > 0 {
         for row in &conn.query(query, &[]).unwrap(){
-            let _id_c : i32 = row.get(0);
         let mut list: LinkedList<InternshipDisplay> = LinkedList::new();
             for row_inter in &conn.query("SELECT id_internship, internship.name, start_date, end_date, 
                                 degree, description, pros, cons,contrat.name, users.name, 
@@ -326,8 +325,6 @@ fn signin(input: Json<User>) -> content::Json<String> {
             let result = conn.query("Select id_user, firstname, name from users where mail = $1", &[&input.mail]);
             let user = result.unwrap();
             let id : i32 = user.get(0).get(0);
-            let _firstname : String = user.get(0).get(1);
-            let _name : String = user.get(0).get(2);
             let token_str = yyid_string();
 
             let _result = conn.query("INSERT into token (value, date, id_user) VALUES ($1,$2,$3)",&[&token_str,&Utc::now().to_string(),&id]);
@@ -434,7 +431,6 @@ fn create_internship(token :Token,input: Json<CreateInternship>) -> content::Jso
 #[post("/search_internships", format="application/json", data="<input>")]
 fn search_internships(_token : Token,input : Json<SearchStructIntern>) -> content::Json<String>{
     let mut contrats : String = "".to_string();
-    let _tags : String;
     let mut internship : String = "".to_string();
     let mut resulting =false;
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
@@ -521,10 +517,8 @@ fn search_internships(_token : Token,input : Json<SearchStructIntern>) -> conten
 #[post("/search_ets", format="application/json", data="<input>")]
 fn search_ets(_token : Token,input : Json<SearchStruct>) -> content::Json<String>{
     let mut contrats : String = "".to_string();
-    let _tags : String;
     let mut internship : String = "".to_string();
     let mut resulting =false;
-    println!("{}", input.pos.center_lat);
     let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
     let mut result = conn.query("SELECT DISTINCT id_internship from internship", &[]);
