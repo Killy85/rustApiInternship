@@ -394,7 +394,7 @@ fn create_company(input: Json<Company>) -> content::Json<String> {
 
 #[post("/create_internship",format = "application/json", data = "<input>")]
 fn create_internship(token :Token,input: Json<CreateInternship>) -> content::Json<String> {
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
+    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",
             TlsMode::None).unwrap();
     
     let start_date = date_converter(input.start_date.clone());
@@ -412,7 +412,10 @@ fn create_internship(token :Token,input: Json<CreateInternship>) -> content::Jso
             let comp_query = conn.query("INSERT INTO has_been_made_in (id_company,id_internship) VALUES ($1,$2)", &[&input.id_company,&id_internship]);
             if comp_query.is_ok() {
                 for tag in &input.tags{
-                    let _tags_res = conn.query("INSERT INTO has_tags (id_internship, id_tag) VALUES ($1,$2)", &[&id_internship,&tag]);
+                    let tags_res = conn.query("INSERT INTO has_tag (id_internship, id_tag) VALUES ($1,$2)", &[&id_internship,&tag]);
+                    if !tags_res.is_ok(){
+                        println!("{}", tags_res.unwrap_err());
+                    }
                 }
                 content::Json(json!({"status" : 200, "message" : "Internship created"}).to_string())
             }
@@ -680,7 +683,7 @@ fn scale_float_sup(input : f32, zoom_level : i16, is_lat : bool) -> f32 {
 }
 
 fn is_valid(key: &str) -> bool {
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
+    let conn = Connection::connect("postgres://killy:rustycode44@54.38.244.17:5432/rustDb",
             TlsMode::None).unwrap();
     let result = conn.query(&format!("SELECT date from token where value='{}'", key), &[]);
     let mut count = 0;
