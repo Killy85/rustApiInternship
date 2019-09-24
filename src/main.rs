@@ -27,6 +27,7 @@ use yyid::yyid_string;
 static Y_DELTA : f32 = 0.3541;
 static X_DELTA : f32 = 1.014;
 
+static bd_connexion : String = "postgres://user:pass@localhost:5432/rustDb";
 
 #[derive(Serialize, Deserialize)]
 struct User {
@@ -180,7 +181,7 @@ fn hello() -> &'static str {
 fn company_display(_token : Token, id : i32)-> content::Json<String>{
     let mut ets : LinkedList<EnterpriseDisplay> = LinkedList::new();
     let query = &format!("SELECT * FROM company WHERE id_company = {}", id);
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
+    let conn = Connection::connect(bd_connexion,TlsMode::None).unwrap();
     let result = conn.query(query, &[]).unwrap().len();
     if result > 0 {
         for row in &conn.query(query, &[]).unwrap(){
@@ -235,7 +236,7 @@ fn company_display(_token : Token, id : i32)-> content::Json<String>{
 #[get("/tags")]
 fn tags(_token :Token ) -> content::Json<String>{
     
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
+    let conn = Connection::connect(bd_connexion,TlsMode::None).unwrap();
     let mut list: LinkedList<Tagsinit> = LinkedList::new(); 
 
     for row in &conn.query("SELECT id_tag, name FROM tag", &[]).unwrap() {
@@ -251,7 +252,7 @@ fn tags(_token :Token ) -> content::Json<String>{
 #[get("/contract")]
 fn contract(_token: Token) -> content::Json<String>{
     
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
+    let conn = Connection::connect(bd_connexion,TlsMode::None).unwrap();
     let mut list: LinkedList<Contract> = LinkedList::new(); 
 
     for row in &conn.query("SELECT id_contrat, name FROM contrat", &[]).unwrap() {
@@ -267,7 +268,7 @@ fn contract(_token: Token) -> content::Json<String>{
 #[get("/company")]
 fn company(_token : Token) -> content::Json<String>{
     
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
+    let conn = Connection::connect(bd_connexion,TlsMode::None).unwrap();
     let mut list: LinkedList<CompanyList> = LinkedList::new(); 
 
     for row in &conn.query("SELECT id_company, name FROM company", &[]).unwrap() {
@@ -282,7 +283,7 @@ fn company(_token : Token) -> content::Json<String>{
 
 #[post("/refresh_token",format = "application/json", data = "<input>")]
 fn refresh_token(input: Json<ConnectionApp>) -> content::Json<String> {
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
+    let conn = Connection::connect(bd_connexion,
             TlsMode::None).unwrap();
     let dt = Utc::now();
     let result = conn.query(
@@ -312,7 +313,7 @@ fn refresh_token(input: Json<ConnectionApp>) -> content::Json<String> {
 
 #[post("/signin",format = "application/json", data = "<input>")]
 fn signin(input: Json<User>) -> content::Json<String> {
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
+    let conn = Connection::connect(bd_connexion,
             TlsMode::None).unwrap();
 
     let result = conn.query(
@@ -341,7 +342,7 @@ fn signin(input: Json<User>) -> content::Json<String> {
 
 #[post("/login",format = "application/json", data = "<input>")]
 fn authenticate(input: Json<ConnectionApp>) -> content::Json<String> {
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
+    let conn = Connection::connect(bd_connexion,
             TlsMode::None).unwrap();
     
     let result = conn.query(
@@ -376,7 +377,7 @@ fn authenticate(input: Json<ConnectionApp>) -> content::Json<String> {
 
 #[post("/create_company",format = "application/json", data = "<input>")]
 fn create_company(input: Json<Company>) -> content::Json<String> {
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",
+    let conn = Connection::connect(bd_connexion,
             TlsMode::None).unwrap();
 
     let result = conn.query(
@@ -436,7 +437,7 @@ fn search_internships(_token : Token,input : Json<SearchStructIntern>) -> conten
     let mut contrats : String = "".to_string();
     let mut internship : String = "".to_string();
     let mut resulting =false;
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
+    let conn = Connection::connect(bd_connexion,TlsMode::None).unwrap();
     let mut list: LinkedList<InternshipDisplay> = LinkedList::new(); 
     let mut result = conn.query("SELECT DISTINCT id_internship from internship", &[]);
     if input.tags.len() >0 {
@@ -522,7 +523,7 @@ fn search_ets(_token : Token,input : Json<SearchStruct>) -> content::Json<String
     let mut contrats : String = "".to_string();
     let mut internship : String = "".to_string();
     let mut resulting =false;
-    let conn = Connection::connect("postgres://killy:rustycode44@localhost:5432/rustDb",TlsMode::None).unwrap();
+    let conn = Connection::connect(bd_connexion,TlsMode::None).unwrap();
     let mut list: LinkedList<EnterpriseInit> = LinkedList::new(); 
     let mut result = conn.query("SELECT DISTINCT id_internship from internship", &[]);
     if input.tags.len() <= 0 && input.contrats.len() <= 0 {
